@@ -4,6 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Kepemilikan Mitra DRM</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, doc, getDocs, getDoc,
+    setDoc, deleteDoc, onSnapshot, writeBatch
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAp2LtHu01LuIOLG-2kYT-52Z84vmcJYxU",
+    authDomain: "db-mitra-1a97c.firebaseapp.com",
+    projectId: "db-mitra-1a97c",
+    storageBucket: "db-mitra-1a97c.firebasestorage.app",
+    messagingSenderId: "784787489919",
+    appId: "1:784787489919:web:52d5cad0a09b494568eb4a"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+
+  // Expose to global scope so the rest of our plain-JS dashboard can use it
+  window.__fb = {
+    db, collection, doc, getDocs, getDoc,
+    setDoc, deleteDoc, onSnapshot, writeBatch
+  };
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -244,6 +269,7 @@ table.mt tfoot td:nth-child(2){background:var(--card2)}
     </div>
   </div>
   <div class="topbar-right">
+    <span id="sync-badge" style="font-size:11px;font-weight:600;color:var(--text3);margin-right:4px;white-space:nowrap">🔌 Menghubungkan...</span>
     <button class="btn btn-outline" onclick="showRecap()">🗂️ Rekap</button>
     <button class="btn btn-outline" onclick="showSummary()">📊 Ringkasan</button>
     <button class="btn btn-primary" onclick="openAddBranch()">+ Tambah Cabang</button>
@@ -401,8 +427,10 @@ const SL={lunas:'Sold Out',open:'Open Sale',booking:'Booking/DP',so:'Soft Openin
 const SB={lunas:'b-lunas',open:'b-open',booking:'b-booking',so:'b-dp',go:'b-sold',dev:'b-dev'};
 const DC={lunas:'dot-lunas',open:'dot-open',booking:'dot-booking',so:'dot-booking',go:'dot-lunas',dev:'dot-dev'};
 
-let branches=[
-  {id:'DRM0001',code:'DRM0001',name:'Margaasih (MGS)',model:'Konsorsium Mitra',status:'lunas',price:700000000,note:'',mitras:[
+// Data awal (seed) - hanya dipakai SEKALI kalau Firestore masih kosong
+// Disesuaikan dengan file Excel terbaru (Dashboard_Monitoring_Kepemilikan_Mitra.xlsx)
+const DEFAULT_BRANCHES=[
+  {id:'DRM0001',code:'DRM0001',name:'Margaasih (MGS)',model:'Konsorsium Mitra',status:'lunas',price:0,note:'',mitras:[
     {id:'m1',name:'Ir. H. Amir BS',share:50,uang:0,piutang:0,status:'Lunas',tgl:''},
     {id:'m2',name:'Pak Yungky & Ibu Sully',share:20,uang:0,piutang:0,status:'Lunas',tgl:''},
     {id:'m3',name:'Drg. Dicky Harun Sp.Ort',share:20,uang:0,piutang:0,status:'Lunas',tgl:''},
@@ -410,58 +438,72 @@ let branches=[
     {id:'m5',name:'Pak Putra M Lazwar',share:2,uang:0,piutang:0,status:'Lunas',tgl:''},
     {id:'m6',name:'Pak Iqbal',share:2,uang:0,piutang:0,status:'Lunas',tgl:''},
   ]},
-  {id:'DRM0002',code:'DRM0002',name:'Summarecon Bandung (SMB)',model:'Full Ownership',status:'lunas',price:600000000,note:'',mitras:[
-    {id:'m7',name:'Ibu Soffi (Pak Galuh)',share:100,uang:600000000,piutang:0,status:'Lunas',tgl:''},
+  {id:'DRM0002',code:'DRM0002',name:'Summarecon Bandung (SMB)',model:'Full Ownership',status:'lunas',price:0,note:'',mitras:[
+    {id:'m7',name:'Ibu Soffi (Pak Galuh)',share:100,uang:0,piutang:0,status:'Lunas',tgl:''},
   ]},
-  {id:'DRM0005',code:'DRM0005',name:'Kab. Bekasi – Cikarang Timur',model:'Full Ownership',status:'lunas',price:600000000,note:'',mitras:[
+  {id:'DRM0003',code:'DRM0003',name:'Surapati Core Bandung (SCB)',model:'Konsorsium Mitra',status:'lunas',price:0,note:'',mitras:[
+    {id:'m66',name:'Pak Maman Abdurrokhman',share:60,uang:0,piutang:0,status:'Lunas',tgl:''},
+    {id:'m67',name:'Ibu Siti Farida',share:33,uang:0,piutang:0,status:'Lunas',tgl:''},
+    {id:'m68',name:'Pak Wahyu',share:6,uang:0,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0004',code:'DRM0004',name:'Kota Bekasi Utara (BKU)',model:'Full Ownership',status:'lunas',price:600000000,note:'',mitras:[
+    {id:'m69',name:'Agustina Rahayu (ci Shensen)',share:100,uang:600000000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0005',code:'DRM0005',name:'Kab. Bekasi – Cikarang Timur (CKT)',model:'Full Ownership',status:'lunas',price:600000000,note:'',mitras:[
     {id:'m8',name:'Agustina Rahayu (ci Shensen)',share:100,uang:600000000,piutang:0,status:'Lunas',tgl:''},
   ]},
-  {id:'DRM0006',code:'DRM0006',name:'Cimahi (CMH)',model:'Konsorsium Mitra',status:'lunas',price:700000000,note:'',mitras:[
+  {id:'DRM0006',code:'DRM0006',name:'Cimahi (CMH)',model:'Konsorsium Mitra',status:'lunas',price:0,note:'',mitras:[
     {id:'m9',name:'Pak Wahyu',share:50,uang:0,piutang:0,status:'Lunas',tgl:''},
     {id:'m10',name:'Ibu Nurul Faidah (Pak Putra)',share:50,uang:0,piutang:0,status:'Lunas',tgl:''},
   ]},
-  {id:'DRM0007',code:'DRM0007',name:'Karawang Barat (KRB)',model:'Konsorsium Mitra',status:'lunas',price:700000000,note:'',mitras:[
+  {id:'DRM0007',code:'DRM0007',name:'Karawang Barat (KRB)',model:'Konsorsium Mitra',status:'lunas',price:686000000,note:'',mitras:[
     {id:'m11',name:'Ibu Mujiyati',share:2,uang:14000000,piutang:0,status:'Lunas',tgl:''},
-    {id:'m12',name:'Ayuska Zaqia Tarasati',share:25,uang:175000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m12',name:'Ayuska Zaqia Tarasati (Bunda Aisya)',share:25,uang:175000000,piutang:0,status:'Lunas',tgl:''},
     {id:'m13',name:'Jeckson Tanaya',share:2,uang:14000000,piutang:0,status:'Lunas',tgl:''},
     {id:'m14',name:'Drg. Fika Raesita',share:5,uang:35000000,piutang:0,status:'Lunas',tgl:''},
     {id:'m15',name:'Nena Mutmainnah (Pak Agus)',share:30,uang:210000000,piutang:0,status:'Lunas',tgl:''},
     {id:'m16',name:'Darmina Ginting',share:1,uang:7000000,piutang:0,status:'Lunas',tgl:''},
     {id:'m17',name:'Drg. Denti Sari',share:10,uang:70000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m29b',name:'Pak Hafish',share:2,uang:10000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m70',name:'Oce Jaswadi',share:2,uang:14000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m71',name:'Drg. Afiansyah',share:5,uang:35000000,piutang:0,status:'Lunas',tgl:''},
     {id:'m18',name:'Mohammad Reza',share:2,uang:14000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m72',name:'Ali Sodiqin',share:8,uang:56000000,piutang:0,status:'Lunas',tgl:''},
     {id:'m19',name:'Dr. Dewi Anna',share:1,uang:7000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m73',name:'Pak Itsnan',share:5,uang:25000000,piutang:0,status:'Lunas',tgl:''},
   ]},
-  {id:'DRM0009',code:'DRM0009',name:'Tasik Point',model:'Full Ownership',status:'go',price:700000000,note:'',mitras:[
-    {id:'m20',name:'Agus Saparudin',share:100,uang:700000000,piutang:0,status:'Lunas',tgl:''},
+  {id:'DRM0008',code:'DRM0008',name:'Tangerang (TGR)',model:'Full Ownership',status:'lunas',price:350000000,note:'Sisa pembayaran Rp100.000.000,- dari bagi hasil',mitras:[
+    {id:'m74',name:'Drg. Badriah Mamat',share:100,uang:350000000,piutang:100000000,status:'Piutang',tgl:''},
   ]},
-  {id:'DRM0010',code:'DRM0010',name:'Depok Citayam (DCT)',model:'Konsorsium Mitra',status:'go',price:700000000,note:'Grand Opening 1 Mei 2026',mitras:[
-    {id:'m21',name:'Bapak Maman',share:60,uang:320000000,piutang:75000000,status:'Piutang',tgl:''},
+  {id:'DRM0009',code:'DRM0009',name:'Tasikmalaya (TSM)',model:'Full Ownership',status:'lunas',price:700000000,note:'',mitras:[
+    {id:'m20',name:'Pak Agus Saparudin (pak Arpi)',share:100,uang:700000000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0010',code:'DRM0010',name:'Depok Citayam (DCT)',model:'Konsorsium Mitra',status:'go',price:600000000,note:'Grand Opening 1 Mei 2026. Sisa pembayaran Rp75.000.000,- Bapak Maman dari bagi hasil',mitras:[
+    {id:'m21',name:'Bapak Maman',share:60,uang:320000000,piutang:75000000,status:'Lunas',tgl:''},
     {id:'m22',name:'Arundayu Zahra Farasati',share:25,uang:175000000,piutang:0,status:'Lunas',tgl:''},
     {id:'m23',name:'Bapak Suparwoto',share:15,uang:105000000,piutang:0,status:'Lunas',tgl:''},
   ]},
-  {id:'DRM0011',code:'DRM0011',name:'Bekasi Selatan Pekayon (BSL)',model:'Konsorsium Mitra',status:'so',price:700000000,note:'Grand Opening 12 Jun 2026. Pak Maman 75jt dibayar saat bagi hasil',mitras:[
-    {id:'m24',name:'Bapak Maman',share:60,uang:320000000,piutang:100000000,status:'Piutang',tgl:''},
+  {id:'DRM0011',code:'DRM0011',name:'Bekasi Selatan Pekayon (BSL)',model:'Konsorsium Mitra',status:'booking',price:600000000,note:'Pak Maman 75jt dibayar saat bagi hasil',mitras:[
+    {id:'m24',name:'Bapak Maman',share:60,uang:320000000,piutang:100000000,status:'Booking',tgl:''},
     {id:'m25',name:'Ibu Ayundaru Aisha Larasati',share:25,uang:175000000,piutang:0,status:'Lunas',tgl:''},
     {id:'m26',name:'Bapak Suparwoto',share:15,uang:105000000,piutang:0,status:'Lunas',tgl:''},
   ]},
-  {id:'DRM0012',code:'DRM0012',name:'Cibinong (CBN)',model:'Konsorsium Mitra',status:'booking',price:700000000,note:'',mitras:[
+  {id:'DRM0012',code:'DRM0012',name:'Cibinong (CBN)',model:'Konsorsium Mitra',status:'lunas',price:682000000,note:'',mitras:[
     {id:'m27',name:'Ibu Ceri',share:10,uang:70000000,piutang:0,status:'Lunas',tgl:''},
-    {id:'m28',name:'Bapak Ali Sodiqin',share:15,uang:0,piutang:105000000,status:'Piutang',tgl:''},
-    {id:'m29',name:'Bapak Hafish',share:4,uang:10000000,piutang:10000000,status:'DP',tgl:''},
-    {id:'m30',name:'Ibu Denta',share:1,uang:500000,piutang:6500000,status:'Booking',tgl:''},
-    {id:'m31',name:'Bapak Hery',share:5,uang:500000,piutang:34500000,status:'Booking',tgl:''},
-    {id:'m32',name:'Bapak Rusdi (Rusdiana)',share:45,uang:315000000,piutang:0,status:'Lunas',tgl:''},
-    {id:'m33',name:'Kenny Kasiany',share:7,uang:49000000,piutang:0,status:'Lunas',tgl:''},
-    {id:'m34',name:'Muhammad Hafish',share:4,uang:10000000,piutang:10000000,status:'DP',tgl:''},
+    {id:'m29',name:'Bapak Hafish',share:4,uang:20000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m30',name:'Ibu Denta',share:1,uang:7000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m75',name:'Tim Ops',share:1,uang:5000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m76',name:'Bapak Tinus',share:23,uang:161000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m32',name:'Bapak Rusdi',share:45,uang:315000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m33',name:'Ibu Kenny',share:7,uang:49000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m77',name:'Pak Putra',share:4,uang:20000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m78',name:'Bapak Adi',share:5,uang:35000000,piutang:0,status:'Lunas',tgl:''},
   ]},
-  {id:'DRM0013',code:'DRM0013',name:'Depok Sawangan',model:'Full Ownership',status:'booking',price:250000000,note:'Serah terima kunci sudah dilakukan',mitras:[
-    {id:'m35',name:'Putra Mochamad',share:100,uang:250000000,piutang:0,status:'Lunas',tgl:''},
+  {id:'DRM0013',code:'DRM0013',name:'Depok (DPK)',model:'Full Ownership',status:'booking',price:200000000,note:'',mitras:[
+    {id:'m79',name:'Bapak Putra',share:100,uang:200000000,piutang:57000000,status:'DP',tgl:''},
   ]},
-  {id:'DRM0014',code:'DRM0014',name:'Duren Sawit (Jaktim)',model:'Konsorsium Mitra',status:'open',price:700000000,note:'Grand Opening 15 Jun 2026',mitras:[
-    {id:'m36',name:'Rudy Wibowo',share:70,uang:30000000,piutang:460000000,status:'Booking',tgl:''},
-    {id:'m37',name:'Bapak Amir Fauzi, ST',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
-    {id:'m38',name:'Bapak Rifqi Apriandi',share:10,uang:3500000,piutang:31500000,status:'DP',tgl:''},
-    {id:'m39',name:'Bapak Ahmad Nizar',share:11,uang:60500000,piutang:0,status:'Lunas',tgl:''},
+  {id:'DRM0014',code:'DRM0014',name:'Duren Sawit (DST)',model:'Full Ownership',status:'lunas',price:700000000,note:'',mitras:[
+    {id:'m36',name:'Bapak Rudy Wibowo',share:100,uang:700000000,piutang:0,status:'Lunas',tgl:'2026-03-09'},
   ]},
   {id:'DRM0015',code:'DRM0015',name:'Garut (GRT)',model:'Konsorsium Mitra',status:'lunas',price:550000000,note:'',mitras:[
     {id:'m40',name:'Ibu Ayuska (Bunda Aisya)',share:13,uang:71500000,piutang:0,status:'Lunas',tgl:''},
@@ -485,23 +527,176 @@ let branches=[
     {id:'m56',name:'Bapak Dwi Nugroho',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
     {id:'m57',name:'Bapak Edwin',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
     {id:'m58',name:'Bapak Aji',share:1,uang:500000,piutang:3000000,status:'Booking',tgl:''},
-    {id:'m59',name:'Ibu Imas Nuraida',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m59',name:'Ibu Imas Nuraida (pak Indra)',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
     {id:'m60',name:'Bapak Asep Hermawan',share:5,uang:500000,piutang:27000000,status:'DP',tgl:''},
     {id:'m61',name:'Hamba Allah',share:8,uang:0,piutang:28000000,status:'Piutang',tgl:''},
     {id:'m62',name:'Bapak Wahyu',share:1,uang:0,piutang:3500000,status:'Piutang',tgl:''},
   ]},
-  {id:'DRM0020',code:'DRM0020',name:'Sragen (SRGN)',model:'Full Ownership',status:'booking',price:550000000,note:'',mitras:[
+  {id:'DRM0017',code:'DRM0017',name:'Bogor Point (BGR)',model:'Konsorsium Mitra',status:'lunas',price:506500000,note:'',mitras:[
+    {id:'m80',name:'Pak Amir',share:15,uang:82500000,piutang:0,status:'Lunas',tgl:'2026-03-09'},
+    {id:'m81',name:'Ibu Denti',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:'2026-04-01'},
+    {id:'m82',name:'Frita',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m83',name:'Pak Firman',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m84',name:'Pak Bayu',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m85',name:'Pak Ahmad Nizar',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m86',name:'Ibu Amilicia Adi Hartanti',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m87',name:'Bapak Dwi Nugroho',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m88',name:'Ibu Drg. Fika Resieta',share:10,uang:15500000,piutang:39500000,status:'DP',tgl:''},
+    {id:'m89',name:'Bapak Edwin',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m90',name:'Bapak Denny Sutriadi',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m91',name:'Bapak Ade Arifin',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m92',name:'Ibu Nurin Rifalda Utami',share:2,uang:7000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m93',name:'Ibu Renial Deviana',share:3,uang:16500000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0018',code:'DRM0018',name:'Solo (SLO)',model:'Konsorsium Mitra',status:'lunas',price:550000000,note:'',mitras:[
+    {id:'m94',name:'Bapak Indra',share:31,uang:170500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m95',name:'Ibu Selamita',share:40,uang:220000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m96',name:'Ibu Tri',share:2,uang:11000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m97',name:'Ibu Amilicia Adi Hartanti',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m98',name:'Bapak Dwi Nugroho',share:11,uang:60500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m99',name:'Ibu Lutfi',share:6,uang:33000000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0019',code:'DRM0019',name:'Semarang (SMG)',model:'Konsorsium Mitra',status:'lunas',price:443500000,note:'',mitras:[
+    {id:'m100',name:'Ibu Anni Nurhadiyati',share:50,uang:275000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m101',name:'Ibu Ayuska Zaqia',share:10,uang:0,piutang:55000000,status:'Piutang',tgl:''},
+    {id:'m102',name:'Ibu Haryanti',share:6,uang:33000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m37',name:'Bapak Amir Fauzi, ST',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m38',name:'Bapak Rifqi Apriandi',share:10,uang:3500000,piutang:31500000,status:'DP',tgl:''},
+    {id:'m39',name:'Bapak Ahmad Nizar',share:11,uang:60500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m103',name:'Ibu Renial Deviana',share:3,uang:16500000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0020',code:'DRM0020',name:'Sragen (SRGN)',model:'Full Ownership',status:'booking',price:55000000,note:'',mitras:[
     {id:'m63',name:'Nur Hidayah',share:100,uang:55000000,piutang:495000000,status:'DP',tgl:''},
   ]},
-  {id:'DRM0021',code:'DRM0021',name:'Solo II',model:'Full Ownership',status:'booking',price:550000000,note:'',mitras:[
+  {id:'DRM0021',code:'DRM0021',name:'Solo II',model:'Full Ownership',status:'booking',price:500000,note:'',mitras:[
     {id:'m64',name:'Bapak Soebakdi',share:100,uang:500000,piutang:549500000,status:'Booking',tgl:''},
   ]},
-  {id:'DRM0022',code:'DRM0022',name:'Klaten (KLT)',model:'Full Ownership',status:'booking',price:550000000,note:'',mitras:[
+  {id:'DRM0022',code:'DRM0022',name:'Klaten (KLT)',model:'Full Ownership',status:'booking',price:500000,note:'',mitras:[
     {id:'m65',name:'Ibu Vicka Audiawati',share:100,uang:500000,piutang:549500000,status:'Booking',tgl:'2026-05-30'},
   ]},
-  {id:'DRM0023',code:'DRM0023',name:'Semarang II',model:'Konsorsium Mitra',status:'open',price:550000000,note:'Target closing Juni 2026',mitras:[]},
-  {id:'DRM0024',code:'DRM0024',name:'Sukabumi',model:'Konsorsium Mitra',status:'open',price:550000000,note:'Target closing Juni 2026',mitras:[]},
+  {id:'DRM0023',code:'DRM0023',name:'Semarang II',model:'Konsorsium Mitra',status:'open',price:2500000,note:'',mitras:[
+    {id:'m104',name:'Bapak Tri Adi Santo',share:15,uang:0,piutang:82500000,status:'Piutang',tgl:''},
+    {id:'m105',name:'Ibu Nurin Rifalda Utami',share:5,uang:1500000,piutang:16000000,status:'DP',tgl:''},
+    {id:'m106',name:'Bapak Sayoga Risdya Prasetyo',share:1,uang:1000000,piutang:2500000,status:'DP',tgl:''},
+    {id:'m107',name:'Ibu Metha Arminawati',share:20,uang:0,piutang:110000000,status:'Piutang',tgl:''},
+  ]},
+  {id:'DRM0024',code:'DRM0024',name:'Sukabumi',model:'Konsorsium Mitra',status:'open',price:0,note:'',mitras:[
+    {id:'m108',name:'Bapak Amir Fauzi S.T',share:10,uang:0,piutang:55000000,status:'Piutang',tgl:''},
+  ]},
+  {id:'DRM0025',code:'DRM0025',name:'(belum ada nama)',model:'Konsorsium Mitra',status:'dev',price:0,note:'Data lokasi & mitra belum diisi',mitras:[]},
+  {id:'DRM0026',code:'DRM0026',name:'(belum ada nama)',model:'Konsorsium Mitra',status:'dev',price:0,note:'',mitras:[]},
+  {id:'DRM0027',code:'DRM0027',name:'(belum ada nama)',model:'Konsorsium Mitra',status:'dev',price:0,note:'',mitras:[]},
+  {id:'DRM0028',code:'DRM0028',name:'(belum ada nama)',model:'Konsorsium Mitra',status:'dev',price:0,note:'',mitras:[]},
+  {id:'DRM0029',code:'DRM0029',name:'(belum ada nama)',model:'Konsorsium Mitra',status:'dev',price:0,note:'',mitras:[]},
+  {id:'DRM0030',code:'DRM0030',name:'(belum ada nama)',model:'Konsorsium Mitra',status:'dev',price:0,note:'',mitras:[]},
 ];
+
+// ══════════════════════════════════════
+//  FIRESTORE SYNC LAYER
+//  Collection: "branches" — 1 dokumen = 1 cabang (field mitras = array)
+// ══════════════════════════════════════
+let branches = [];           // live state, di-sync dari Firestore
+let fbReady = false;          // true setelah listener pertama kali jalan
+let isApplyingRemote = false; // flag supaya kita tidak loop nulis balik
+
+function showSyncBadge(state){
+  const el = document.getElementById('sync-badge');
+  if(!el) return;
+  if(state==='ok'){ el.textContent='☁️ Tersinkron'; el.style.color='var(--teal)'; }
+  else if(state==='saving'){ el.textContent='⏳ Menyimpan...'; el.style.color='var(--amber)'; }
+  else if(state==='offline'){ el.textContent='⚠️ Offline / Error'; el.style.color='var(--red)'; }
+  else { el.textContent='🔌 Menghubungkan...'; el.style.color='var(--text3)'; }
+}
+
+async function initFirestoreSync(){
+  showSyncBadge('connecting');
+  const { db, collection, getDocs, onSnapshot, doc, setDoc } = window.__fb;
+  const colRef = collection(db, 'branches');
+
+  try{
+    const snap = await getDocs(colRef);
+    if(snap.empty){
+      // Firestore kosong -> tulis data awal (seed) satu kali
+      for(const b of DEFAULT_BRANCHES){
+        await setDoc(doc(db,'branches', b.id), b);
+      }
+    }
+  }catch(err){
+    console.error('Gagal cek/seed Firestore:', err);
+    showSyncBadge('offline');
+  }
+
+  // Listener real-time: setiap perubahan di Firestore (dari device manapun)
+  // langsung update tampilan di sini juga.
+  onSnapshot(colRef, (snapshot) => {
+    isApplyingRemote = true;
+    const list = [];
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      list.push({
+        id: docSnap.id,
+        code: data.code, name: data.name, model: data.model,
+        status: data.status, price: data.price || 0, note: data.note || '',
+        mitras: Array.isArray(data.mitras) ? data.mitras : []
+      });
+    });
+    list.sort((a,b)=> a.code.localeCompare(b.code));
+    branches = list;
+    fbReady = true;
+    showSyncBadge('ok');
+    refreshCurrentView();
+    isApplyingRemote = false;
+  }, (err) => {
+    console.error('Firestore listener error:', err);
+    showSyncBadge('offline');
+  });
+}
+
+// Tulis 1 dokumen cabang (create/update) ke Firestore
+async function fbSaveBranch(branch){
+  showSyncBadge('saving');
+  try{
+    const { db, doc, setDoc } = window.__fb;
+    const { id, ...data } = branch;
+    await setDoc(doc(db,'branches', id), data);
+    showSyncBadge('ok');
+  }catch(err){
+    console.error('Gagal simpan ke Firestore:', err);
+    showSyncBadge('offline');
+    toast('Gagal simpan ke cloud — cek koneksi internet','⚠️');
+  }
+}
+
+// Hapus 1 dokumen cabang dari Firestore
+async function fbDeleteBranch(id){
+  showSyncBadge('saving');
+  try{
+    const { db, doc, deleteDoc } = window.__fb;
+    await deleteDoc(doc(db,'branches', id));
+    showSyncBadge('ok');
+  }catch(err){
+    console.error('Gagal hapus di Firestore:', err);
+    showSyncBadge('offline');
+    toast('Gagal hapus di cloud — cek koneksi internet','⚠️');
+  }
+}
+
+// Re-render tampilan yang sedang aktif setelah data berubah dari cloud
+function refreshCurrentView(){
+  renderSidebar(document.getElementById('search-input')?.value || '');
+  if(currentId && getBranch(currentId)){
+    renderDetail(currentId);
+  } else if(document.getElementById('summary-view')?.style.display==='block'){
+    renderSummaryContent();
+  } else if(document.getElementById('recap-view')?.style.display==='block'){
+    renderRecap();
+  } else if(currentId && !getBranch(currentId)){
+    // cabang yang sedang dibuka ternyata sudah dihapus (dari device lain)
+    currentId=null;
+    document.getElementById('branch-detail').style.display='none';
+    document.getElementById('welcome-state').style.display='flex';
+  }
+}
 
 let currentId=null;
 
@@ -692,6 +887,10 @@ function showSummary(){
   document.getElementById('recap-view').style.display='none';
   document.getElementById('summary-view').style.display='block';
   renderSidebar(document.getElementById('search-input').value);
+  renderSummaryContent();
+}
+
+function renderSummaryContent(){
   const totalM=branches.reduce((s,b)=>s+b.mitras.length,0);
   const totalU=branches.reduce((s,b)=>s+tUang(b.mitras),0);
   const totalP=branches.reduce((s,b)=>s+tPiutang(b.mitras),0);
@@ -766,11 +965,14 @@ function saveBranch(){
     b.note=document.getElementById('ib-note').value;
     closeModal('modal-branch');toast('Cabang diperbarui','✅');
     renderSidebar();renderDetail(eid);
+    fbSaveBranch(b);
   } else {
     if(branches.find(b=>b.id===code)){toast('Kode DRM sudah ada!','⚠️');return}
-    branches.push({id:code,code,name,model:document.getElementById('ib-model').value,status:document.getElementById('ib-status').value,price:+document.getElementById('ib-price').value||0,note:document.getElementById('ib-note').value,mitras:[]});
+    const newBranch={id:code,code,name,model:document.getElementById('ib-model').value,status:document.getElementById('ib-status').value,price:+document.getElementById('ib-price').value||0,note:document.getElementById('ib-note').value,mitras:[]};
+    branches.push(newBranch);
     closeModal('modal-branch');toast('Cabang ditambahkan','✅');
     renderSidebar();selectBranch(code);
+    fbSaveBranch(newBranch);
   }
 }
 function confirmDelBranch(id){
@@ -786,6 +988,7 @@ function delBranch(id){
   document.getElementById('branch-detail').style.display='none';
   document.getElementById('welcome-state').style.display='flex';
   renderSidebar();toast('Cabang dihapus','🗑️');
+  fbDeleteBranch(id);
 }
 
 // ── MITRA CRUD ──
@@ -868,6 +1071,7 @@ function saveMitra(){
   if(eid){Object.assign(b.mitras.find(x=>x.id===eid),data);toast('Mitra diperbarui','✅')}
   else{b.mitras.push({id:uid(),...data});toast('Mitra ditambahkan','✅')}
   closeModal('modal-mitra');renderDetail(bid);
+  fbSaveBranch(b);
 }
 function confirmDelMitra(bid,mid,mname){
   document.getElementById('cfm-title').textContent=`Hapus mitra "${mname}"?`;
@@ -876,8 +1080,10 @@ function confirmDelMitra(bid,mid,mname){
   openModal('modal-confirm');
 }
 function delMitra(bid,mid){
-  getBranch(bid).mitras=getBranch(bid).mitras.filter(m=>m.id!==mid);
+  const b=getBranch(bid);
+  b.mitras=b.mitras.filter(m=>m.id!==mid);
   closeModal('modal-confirm');renderDetail(bid);toast('Mitra dihapus','🗑️');
+  fbSaveBranch(b);
 }
 
 // ── RECAP DASHBOARD ──
@@ -1097,8 +1303,25 @@ function toast(msg,icon='✅'){
   t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);
 }
 
-renderSidebar();
-selectBranch('DRM0001');
+// ══════════════════════════════════════
+//  INIT — tunggu Firebase SDK siap, lalu mulai sinkronisasi
+// ══════════════════════════════════════
+function startApp(){
+  if(!window.__fb){
+    // module script Firebase belum selesai load, coba lagi sebentar
+    setTimeout(startApp, 100);
+    return;
+  }
+  initFirestoreSync().then(()=>{
+    renderSidebar();
+    if(branches.length>0){
+      selectBranch(branches[0].id);
+    } else {
+      document.getElementById('welcome-state').style.display='flex';
+    }
+  });
+}
+startApp();
 </script>
 </body>
 </html>
