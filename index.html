@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Kepemilikan Mitra DRM</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0F1117;--surface:#161B27;--card:#1C2333;--card2:#212840;
+  --border:#2A3249;--border2:#3A4560;--text:#E8EDF5;--text2:#9BA5BB;--text3:#5A6480;
+  --teal:#00C896;--teal-dim:#0A3D2E;--teal-mid:#005C45;
+  --blue:#4D8EFF;--blue-dim:#0D2550;
+  --amber:#F5A623;--amber-dim:#3D2A08;
+  --red:#FF5C5C;--red-dim:#3D1010;
+  --purple:#A78BFA;--purple-dim:#2A1F4A;
+  --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#00C896,#4D8EFF);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#000}
+.topbar-title{font-size:14px;font-weight:700}
+.topbar-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--font)}
+.btn-primary{background:var(--teal);color:#000}
+.btn-primary:hover{background:#00E0A8;transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal)}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid var(--red)}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-amber{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber)}
+.btn-amber:hover{background:var(--amber);color:#000}
+.app{display:flex;height:calc(100vh - 57px)}
+/* sidebar */
+.sidebar{width:260px;min-width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sidebar-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em}
+.sbar-count{font-size:11px;font-weight:700;color:var(--teal);background:var(--teal-dim);padding:2px 7px;border-radius:10px}
+.sidebar-search{margin:10px 12px;display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px 10px;gap:7px}
+.sidebar-search input{background:none;border:none;outline:none;font-size:12px;color:var(--text);width:100%;font-family:var(--font)}
+.sidebar-search input::placeholder{color:var(--text3)}
+.branch-list{overflow-y:auto;flex:1;padding:6px 8px}
+.bi{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:all .12s;margin-bottom:2px}
+.bi:hover{background:var(--card)}
+.bi.active{background:var(--card2);border-left:2px solid var(--teal)}
+.bi-code{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--teal);background:var(--teal-dim);padding:2px 6px;border-radius:4px;white-space:nowrap;min-width:52px;text-align:center}
+.bi-name{font-size:12px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bi-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-lunas{background:var(--teal)}.dot-open{background:var(--amber)}.dot-booking{background:var(--blue)}.dot-dev{background:var(--text3)}.dot-piutang{background:var(--red)}
+/* main */
+.main{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
+/* panel header */
+.bph{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.bph-code{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--teal);margin-bottom:5px}
+.bph-name{font-size:21px;font-weight:800;letter-spacing:-.5px}
+.bph-meta{font-size:12px;color:var(--text3);margin-top:5px;display:flex;gap:14px;flex-wrap:wrap}
+.bph-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+/* stats */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.sc-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px}
+.sc-val{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.sc-val.g{color:var(--teal)}.sc-val.b{color:var(--blue)}.sc-val.a{color:var(--amber)}.sc-val.r{color:var(--red)}
+.sc-sub{font-size:11px;color:var(--text3);margin-top:3px}
+/* ownership section */
+.os{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:18px;overflow:hidden}
+.os-hdr{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.os-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.os-actions{display:flex;gap:8px}
+.os-body{display:flex;align-items:stretch}
+/* donut */
+.donut-side{padding:22px 18px;display:flex;flex-direction:column;align-items:center;border-right:1px solid var(--border);min-width:190px}
+.donut-wrap{position:relative;width:130px;height:130px;margin-bottom:12px}
+.donut-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.donut-pct{font-size:20px;font-weight:800}
+.donut-lbl{font-size:10px;color:var(--text3)}
+.legend{display:flex;flex-direction:column;gap:5px;width:100%}
+.li{display:flex;align-items:center;gap:6px;font-size:11px}
+.li-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.li-name{color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li-pct{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--teal)}
+/* table */
+.table-side{flex:1;overflow-x:auto}
+table.mt{width:100%;border-collapse:collapse;min-width:580px}
+table.mt thead tr{background:var(--card2)}
+table.mt th{padding:9px 13px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border);white-space:nowrap}
+table.mt th:nth-child(2),table.mt td:nth-child(2){position:sticky;left:0;z-index:2;background:var(--card);min-width:160px}
+table.mt thead th:nth-child(2){background:var(--card2)}
+table.mt tr:hover td{background:rgba(255,255,255,.02)}
+table.mt tr:hover td:nth-child(2){background:#252e42}
+table.mt td{padding:10px 13px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.mt tr:last-child td{border-bottom:none}
+table.mt td.mono{font-family:var(--mono);font-size:11px}
+table.mt tfoot td{padding:9px 13px;font-size:11px;font-weight:700;background:var(--card2);border-top:1px solid var(--border2);color:var(--text2)}
+table.mt tfoot td:nth-child(2){background:var(--card2)}
+/* share bar */
+.sbw{display:flex;align-items:center;gap:7px;min-width:110px}
+.sb{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.sf{height:100%;border-radius:3px;transition:width .4s}
+.spct{font-family:var(--mono);font-size:11px;font-weight:600;min-width:34px;text-align:right}
+/* badges */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.b-lunas{background:var(--teal-dim);color:var(--teal);border:1px solid var(--teal-mid)}
+.b-booking{background:var(--blue-dim);color:var(--blue)}
+.b-dp{background:var(--amber-dim);color:var(--amber)}
+.b-piutang{background:var(--red-dim);color:var(--red)}
+.b-sold{background:#1A2035;color:var(--text2);border:1px solid var(--border2)}
+.b-open{background:var(--purple-dim);color:var(--purple)}
+.b-dev{background:var(--card2);color:var(--text3)}
+/* stacked bar */
+.sb-section{padding:14px 18px;border-top:1px solid var(--border)}
+.sb-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px}
+.stacked{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:1px}
+.seg{height:100%;transition:all .4s;cursor:pointer}
+.seg:hover{filter:brightness(1.2)}
+.seg-sisa{background:var(--border2);border-radius:0 6px 6px 0}
+.seg-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.sli{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2)}
+.sli-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+/* alert */
+.alert{padding:9px 13px;border-radius:7px;font-size:12px;display:flex;align-items:center;gap:7px;margin:0 18px 12px}
+.al-amber{background:var(--amber-dim);border:1px solid rgba(245,166,35,.3);color:var(--amber)}
+.al-red{background:var(--red-dim);border:1px solid rgba(255,92,92,.3);color:var(--red)}
+/* empty */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;color:var(--text3);gap:10px}
+.empty-icon{font-size:36px;opacity:.4}
+.empty-title{font-size:14px;font-weight:600;color:var(--text2)}
+.empty-sub{font-size:12px;text-align:center;max-width:260px}
+/* summary */
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.sum-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px 17px;cursor:pointer;transition:all .15s}
+.sum-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.sum-code{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--teal);background:var(--teal-dim);padding:2px 7px;border-radius:4px}
+.sum-name{font-size:13px;font-weight:700;margin:7px 0 3px}
+.sum-meta{font-size:11px;color:var(--text3);margin-bottom:9px}
+.fill-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:5px}
+.fill-inner{height:100%;border-radius:3px;transition:width .5s}
+.fi-g{background:var(--teal)}.fi-a{background:var(--amber)}.fi-r{background:var(--red)}.fi-d{background:var(--text3)}
+/* modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:14px;width:500px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.modal-hdr{padding:17px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:14px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;padding:2px}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:18px 20px;display:flex;flex-direction:column;gap:13px}
+.modal-footer{padding:13px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:11px;font-weight:600;color:var(--text2)}
+.fg input,.fg select,.fg textarea{background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:8px 11px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;transition:border .15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--teal)}
+.fg select option{background:var(--card)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+/* confirm */
+.cfm-body{padding:20px;text-align:center}
+.cfm-icon{font-size:34px;margin-bottom:10px}
+.cfm-title{font-size:15px;font-weight:700;margin-bottom:5px}
+.cfm-sub{font-size:12px;color:var(--text2)}
+/* toast */
+.toast{position:fixed;bottom:22px;right:22px;z-index:2000;background:var(--card);border:1px solid var(--border2);border-radius:9px;padding:11px 16px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.4);transform:translateY(70px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:7px;max-width:290px}
+.toast.show{transform:translateY(0);opacity:1}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+/* ── RECAP DASHBOARD ── */
+.recap-top{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+.rkpi{border-radius:10px;padding:16px 18px;border:1px solid var(--border);cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.rkpi:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.rkpi.active-filter{box-shadow:0 0 0 2px var(--teal)}
+.rkpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.rkpi-running{background:linear-gradient(135deg,#0A3D2E 0%,#1C2333 100%)}.rkpi-running::before{background:var(--teal)}
+.rkpi-so{background:linear-gradient(135deg,#0D2550 0%,#1C2333 100%)}.rkpi-so::before{background:var(--blue)}
+.rkpi-go{background:linear-gradient(135deg,#2A1F4A 0%,#1C2333 100%)}.rkpi-go::before{background:var(--purple)}
+.rkpi-pending{background:linear-gradient(135deg,#3D2A08 0%,#1C2333 100%)}.rkpi-pending::before{background:var(--amber)}
+.rkpi-dev{background:linear-gradient(135deg,#1A1A2E 0%,#1C2333 100%)}.rkpi-dev::before{background:var(--text3)}
+.rkpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;opacity:.7}
+.rkpi-val{font-size:28px;font-weight:800;letter-spacing:-1px}
+.rkpi-sub{font-size:11px;opacity:.6;margin-top:3px}
+.rkpi-icon{position:absolute;right:14px;top:14px;font-size:22px;opacity:.25}
+/* kanban */
+.kanban{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;min-height:calc(100vh - 320px)}
+.kanban::-webkit-scrollbar{height:5px}
+.lane{min-width:260px;width:260px;flex-shrink:0;display:flex;flex-direction:column;gap:0}
+.lane-hdr{padding:11px 14px;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.lane-hdr-running{background:#005C45;border:1px solid var(--teal)}
+.lane-hdr-so{background:#1A3A6E;border:1px solid var(--blue)}
+.lane-hdr-go{background:#3B2A6E;border:1px solid var(--purple)}
+.lane-hdr-pending{background:#5C3E0A;border:1px solid var(--amber)}
+.lane-hdr-dev{background:#2A2A3E;border:1px solid var(--text3)}
+.lane-title{font-size:12px;font-weight:700;letter-spacing:.04em}
+.lane-badge{font-size:11px;font-weight:700;background:rgba(0,0,0,.3);padding:2px 8px;border-radius:10px}
+.lane-body{background:rgba(255,255,255,.02);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:8px;display:flex;flex-direction:column;gap:7px;min-height:120px}
+.kcard{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:all .15s;position:relative}
+.kcard:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.kcard-code{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--teal);margin-bottom:5px}
+.kcard-name{font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.3}
+.kcard-model{font-size:10px;color:var(--text3);margin-bottom:8px}
+.kcard-fill{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.kcard-fill-inner{height:100%;border-radius:2px}
+.kcard-meta{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--text3)}
+.kcard-mitra{display:flex;align-items:center;gap:4px}
+.kcard-alert{position:absolute;top:8px;right:8px;font-size:11px}
+.kcard-note{font-size:10px;color:var(--amber);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);line-height:1.4}
+/* recap table below kanban */
+.recap-table-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-top:22px;overflow:hidden}
+.recap-table-hdr{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.recap-table-title{font-size:13px;font-weight:700}
+.rtbl{width:100%;border-collapse:collapse}
+.rtbl th{padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;background:var(--card2);border-bottom:1px solid var(--border);white-space:nowrap}
+.rtbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.rtbl tr:last-child td{border-bottom:none}
+.rtbl tr:hover td{background:rgba(255,255,255,.02);cursor:pointer}
+.rtbl td.mono{font-family:var(--mono);font-size:11px}
+/* filter tabs */
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.ftab{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;transition:all .15s;font-family:var(--font)}
+.ftab:hover{border-color:var(--teal);color:var(--teal)}
+.ftab.active{background:var(--teal);border-color:var(--teal);color:#000}
+/* piutang highlight */
+.piutang-row td{background:rgba(255,92,92,.04)!important}
+@media(max-width:800px){.recap-top{grid-template-columns:repeat(2,1fr)}.kanban{flex-direction:column}.lane{width:100%;min-width:unset}}
+@media(max-width:700px){
+  .os-body{flex-direction:column}
+  .donut-side{border-right:none;border-bottom:1px solid var(--border)}
+  .col-hide-mobile{display:none}
+  table.mt{min-width:420px}
+}
+@media(max-width:800px){.stats-row{grid-template-columns:repeat(2,1fr)}.sidebar{width:200px;min-width:200px}.os-body{flex-direction:column}.donut-side{border-right:none;border-bottom:1px solid var(--border)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">DM</div>
+    <div>
+      <div class="topbar-title">Dashboard Monitoring Kepemilikan Mitra</div>
+      <div class="topbar-sub">Manajemen Cabang DRM — Data Real-time</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-outline" onclick="showRecap()">🗂️ Rekap</button>
+    <button class="btn btn-outline" onclick="showSummary()">📊 Ringkasan</button>
+    <button class="btn btn-primary" onclick="openAddBranch()">+ Tambah Cabang</button>
+  </div>
+</div>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-hdr">
+      <span class="sidebar-title">Daftar Cabang</span>
+      <span class="sbar-count" id="branch-count">0</span>
+    </div>
+    <div class="sidebar-search">
+      <span style="color:var(--text3);font-size:13px">🔍</span>
+      <input type="text" id="search-input" placeholder="Cari cabang..." oninput="filterBranches(this.value)">
+    </div>
+    <div class="branch-list" id="branch-list"></div>
+  </div>
+
+  <div class="main" id="main-panel">
+    <div class="empty" id="welcome-state">
+      <div class="empty-icon">🏢</div>
+      <div class="empty-title">Pilih cabang untuk melihat detail</div>
+      <div class="empty-sub">Atau klik Ringkasan untuk overview semua cabang</div>
+    </div>
+    <div id="branch-detail" style="display:none"></div>
+    <div id="summary-view" style="display:none"></div>
+    <div id="recap-view" style="display:none"></div>
+  </div>
+</div>
+
+<!-- MODAL CABANG -->
+<div class="overlay" id="modal-branch">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="mb-title">Tambah Cabang Baru</span>
+      <button class="modal-close" onclick="closeModal('modal-branch')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="eb-id">
+      <div class="fg"><label>Kode DRM *</label><input type="text" id="ib-code" placeholder="DRM0031" maxlength="12"></div>
+      <div class="fg"><label>Nama Cabang *</label><input type="text" id="ib-name" placeholder="Nama Kota / Lokasi"></div>
+      <div class="frow">
+        <div class="fg"><label>Model Kepemilikan</label>
+          <select id="ib-model">
+            <option value="Konsorsium Mitra">Konsorsium Mitra</option>
+            <option value="Full Ownership">Full Ownership</option>
+            <option value="Co-Ownership">Co-Ownership</option>
+          </select>
+        </div>
+        <div class="fg"><label>Status Cabang</label>
+          <select id="ib-status">
+            <option value="dev">Dalam Pengembangan</option>
+            <option value="open">Open Sale</option>
+            <option value="booking">Booking/DP</option>
+            <option value="lunas">Sold Out / Lunas</option>
+            <option value="so">Soft Opening</option>
+            <option value="go">Grand Opening</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label>Harga Cabang (Rp)</label><input type="number" id="ib-price" placeholder="700000000" min="0"></div>
+      <div class="fg"><label>Catatan</label><textarea id="ib-note" rows="2" placeholder="Keterangan tambahan..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-branch')">Batal</button>
+      <button class="btn btn-primary" onclick="saveBranch()">Simpan Cabang</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MITRA -->
+<div class="overlay" id="modal-mitra">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="mm-title">Tambah Mitra</span>
+      <button class="modal-close" onclick="closeModal('modal-mitra')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="em-id">
+      <input type="hidden" id="em-branch">
+      <div class="fg"><label>Nama Mitra *</label><input type="text" id="im-name" placeholder="Nama lengkap mitra"></div>
+
+      <!-- Harga cabang info + uang masuk dengan auto-hitung -->
+      <div style="background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Perhitungan Kepemilikan</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+          <span style="color:var(--text2)">Harga Cabang</span>
+          <span id="im-price-display" style="font-family:var(--mono);font-weight:600;color:var(--text2)">–</span>
+        </div>
+        <div class="frow" style="gap:8px;align-items:flex-end">
+          <div class="fg" style="flex:1">
+            <label>Uang Masuk (Rp)</label>
+            <input type="number" id="im-uang" placeholder="700000000" min="0" oninput="calcShareFromUang()">
+          </div>
+          <div style="padding-bottom:2px">
+            <button type="button" class="btn btn-outline btn-sm" onclick="calcShareFromUang()" style="white-space:nowrap">⟳ Hitung %</button>
+          </div>
+          <div class="fg" style="flex:1">
+            <label>Share % <span id="im-share-auto" style="font-size:10px;color:var(--teal)"></span></label>
+            <input type="number" id="im-share" placeholder="100" min="0" max="100" step="0.01" oninput="calcUangFromShare()">
+          </div>
+        </div>
+        <div id="im-calc-info" style="font-size:11px;color:var(--teal);display:none;padding:6px 10px;background:var(--teal-dim);border-radius:6px"></div>
+      </div>
+
+      <div class="frow">
+        <div class="fg">
+          <label>Sisa Piutang (Rp)</label>
+          <input type="number" id="im-piutang" placeholder="0" min="0">
+        </div>
+        <div class="fg">
+          <label>Status Pembayaran</label>
+          <select id="im-status">
+            <option value="Lunas">Lunas</option>
+            <option value="Booking">Booking</option>
+            <option value="DP">DP</option>
+            <option value="Piutang">Piutang</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label>Tanggal Masuk</label><input type="date" id="im-tgl"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-mitra')">Batal</button>
+      <button class="btn btn-primary" onclick="saveMitra()">Simpan Mitra</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KONFIRMASI -->
+<div class="overlay" id="modal-confirm">
+  <div class="modal" style="width:360px">
+    <div class="modal-hdr">
+      <span class="modal-title">Konfirmasi Hapus</span>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">✕</button>
+    </div>
+    <div class="cfm-body">
+      <div class="cfm-icon">🗑️</div>
+      <div class="cfm-title" id="cfm-title">Hapus data ini?</div>
+      <div class="cfm-sub" id="cfm-sub">Tindakan ini tidak dapat dibatalkan.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-confirm')">Batal</button>
+      <button class="btn btn-danger" id="cfm-ok">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toast-icon">✅</span><span id="toast-msg">Berhasil</span></div>
+
+<script>
+const COLORS=['#00C896','#4D8EFF','#F5A623','#A78BFA','#FF5C5C','#3DDC84','#FF9F43','#54A0FF','#5F27CD','#EE5A24','#009432','#C4E538','#FDA7DF','#D980FA','#9980FA'];
+const SL={lunas:'Sold Out',open:'Open Sale',booking:'Booking/DP',so:'Soft Opening',go:'Grand Opening',dev:'Pengembangan'};
+const SB={lunas:'b-lunas',open:'b-open',booking:'b-booking',so:'b-dp',go:'b-sold',dev:'b-dev'};
+const DC={lunas:'dot-lunas',open:'dot-open',booking:'dot-booking',so:'dot-booking',go:'dot-lunas',dev:'dot-dev'};
+
+let branches=[
+  {id:'DRM0001',code:'DRM0001',name:'Margaasih (MGS)',model:'Konsorsium Mitra',status:'lunas',price:700000000,note:'',mitras:[
+    {id:'m1',name:'Ir. H. Amir BS',share:50,uang:0,piutang:0,status:'Lunas',tgl:''},
+    {id:'m2',name:'Pak Yungky & Ibu Sully',share:20,uang:0,piutang:0,status:'Lunas',tgl:''},
+    {id:'m3',name:'Drg. Dicky Harun Sp.Ort',share:20,uang:0,piutang:0,status:'Lunas',tgl:''},
+    {id:'m4',name:'Pak Wahyu',share:6,uang:0,piutang:0,status:'Lunas',tgl:''},
+    {id:'m5',name:'Pak Putra M Lazwar',share:2,uang:0,piutang:0,status:'Lunas',tgl:''},
+    {id:'m6',name:'Pak Iqbal',share:2,uang:0,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0002',code:'DRM0002',name:'Summarecon Bandung (SMB)',model:'Full Ownership',status:'lunas',price:600000000,note:'',mitras:[
+    {id:'m7',name:'Ibu Soffi (Pak Galuh)',share:100,uang:600000000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0005',code:'DRM0005',name:'Kab. Bekasi – Cikarang Timur',model:'Full Ownership',status:'lunas',price:600000000,note:'',mitras:[
+    {id:'m8',name:'Agustina Rahayu (ci Shensen)',share:100,uang:600000000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0006',code:'DRM0006',name:'Cimahi (CMH)',model:'Konsorsium Mitra',status:'lunas',price:700000000,note:'',mitras:[
+    {id:'m9',name:'Pak Wahyu',share:50,uang:0,piutang:0,status:'Lunas',tgl:''},
+    {id:'m10',name:'Ibu Nurul Faidah (Pak Putra)',share:50,uang:0,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0007',code:'DRM0007',name:'Karawang Barat (KRB)',model:'Konsorsium Mitra',status:'lunas',price:700000000,note:'',mitras:[
+    {id:'m11',name:'Ibu Mujiyati',share:2,uang:14000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m12',name:'Ayuska Zaqia Tarasati',share:25,uang:175000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m13',name:'Jeckson Tanaya',share:2,uang:14000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m14',name:'Drg. Fika Raesita',share:5,uang:35000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m15',name:'Nena Mutmainnah (Pak Agus)',share:30,uang:210000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m16',name:'Darmina Ginting',share:1,uang:7000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m17',name:'Drg. Denti Sari',share:10,uang:70000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m18',name:'Mohammad Reza',share:2,uang:14000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m19',name:'Dr. Dewi Anna',share:1,uang:7000000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0009',code:'DRM0009',name:'Tasik Point',model:'Full Ownership',status:'go',price:700000000,note:'',mitras:[
+    {id:'m20',name:'Agus Saparudin',share:100,uang:700000000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0010',code:'DRM0010',name:'Depok Citayam (DCT)',model:'Konsorsium Mitra',status:'go',price:700000000,note:'Grand Opening 1 Mei 2026',mitras:[
+    {id:'m21',name:'Bapak Maman',share:60,uang:320000000,piutang:75000000,status:'Piutang',tgl:''},
+    {id:'m22',name:'Arundayu Zahra Farasati',share:25,uang:175000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m23',name:'Bapak Suparwoto',share:15,uang:105000000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0011',code:'DRM0011',name:'Bekasi Selatan Pekayon (BSL)',model:'Konsorsium Mitra',status:'so',price:700000000,note:'Grand Opening 12 Jun 2026. Pak Maman 75jt dibayar saat bagi hasil',mitras:[
+    {id:'m24',name:'Bapak Maman',share:60,uang:320000000,piutang:100000000,status:'Piutang',tgl:''},
+    {id:'m25',name:'Ibu Ayundaru Aisha Larasati',share:25,uang:175000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m26',name:'Bapak Suparwoto',share:15,uang:105000000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0012',code:'DRM0012',name:'Cibinong (CBN)',model:'Konsorsium Mitra',status:'booking',price:700000000,note:'',mitras:[
+    {id:'m27',name:'Ibu Ceri',share:10,uang:70000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m28',name:'Bapak Ali Sodiqin',share:15,uang:0,piutang:105000000,status:'Piutang',tgl:''},
+    {id:'m29',name:'Bapak Hafish',share:4,uang:10000000,piutang:10000000,status:'DP',tgl:''},
+    {id:'m30',name:'Ibu Denta',share:1,uang:500000,piutang:6500000,status:'Booking',tgl:''},
+    {id:'m31',name:'Bapak Hery',share:5,uang:500000,piutang:34500000,status:'Booking',tgl:''},
+    {id:'m32',name:'Bapak Rusdi (Rusdiana)',share:45,uang:315000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m33',name:'Kenny Kasiany',share:7,uang:49000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m34',name:'Muhammad Hafish',share:4,uang:10000000,piutang:10000000,status:'DP',tgl:''},
+  ]},
+  {id:'DRM0013',code:'DRM0013',name:'Depok Sawangan',model:'Full Ownership',status:'booking',price:250000000,note:'Serah terima kunci sudah dilakukan',mitras:[
+    {id:'m35',name:'Putra Mochamad',share:100,uang:250000000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0014',code:'DRM0014',name:'Duren Sawit (Jaktim)',model:'Konsorsium Mitra',status:'open',price:700000000,note:'Grand Opening 15 Jun 2026',mitras:[
+    {id:'m36',name:'Rudy Wibowo',share:70,uang:30000000,piutang:460000000,status:'Booking',tgl:''},
+    {id:'m37',name:'Bapak Amir Fauzi, ST',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m38',name:'Bapak Rifqi Apriandi',share:10,uang:3500000,piutang:31500000,status:'DP',tgl:''},
+    {id:'m39',name:'Bapak Ahmad Nizar',share:11,uang:60500000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0015',code:'DRM0015',name:'Garut (GRT)',model:'Konsorsium Mitra',status:'lunas',price:550000000,note:'',mitras:[
+    {id:'m40',name:'Ibu Ayuska (Bunda Aisya)',share:13,uang:71500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m41',name:'Ibu Yanti',share:13,uang:71500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m42',name:'Ibu Yuli',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m43',name:'Ibu Titi',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m44',name:'Ibu Rini',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m45',name:'Ibu Imas',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m46',name:'Bapak Yogie',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m47',name:'Bapak Amir',share:15,uang:82500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m48',name:'Drg. Sarah',share:9,uang:49500000,piutang:0,status:'Lunas',tgl:''},
+  ]},
+  {id:'DRM0016',code:'DRM0016',name:'Pamulang Point (PML)',model:'Konsorsium Mitra',status:'open',price:550000000,note:'Sisa kuota 5%',mitras:[
+    {id:'m49',name:'Pak Amir Fauzi',share:15,uang:82500000,piutang:0,status:'Lunas',tgl:'2026-03-09'},
+    {id:'m50',name:'Pak Alfi',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:'2026-04-02'},
+    {id:'m51',name:'Pak Tri Adi Santo',share:15,uang:82500000,piutang:0,status:'Lunas',tgl:'2026-04-02'},
+    {id:'m52',name:'Pak Firman',share:10,uang:55000000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m53',name:'Pak Bayu',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m54',name:'Pak Mashudan',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m55',name:'Ibu Nunung Ratna Gantini',share:10,uang:0,piutang:55000000,status:'Piutang',tgl:''},
+    {id:'m56',name:'Bapak Dwi Nugroho',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m57',name:'Bapak Edwin',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m58',name:'Bapak Aji',share:1,uang:500000,piutang:3000000,status:'Booking',tgl:''},
+    {id:'m59',name:'Ibu Imas Nuraida',share:5,uang:27500000,piutang:0,status:'Lunas',tgl:''},
+    {id:'m60',name:'Bapak Asep Hermawan',share:5,uang:500000,piutang:27000000,status:'DP',tgl:''},
+    {id:'m61',name:'Hamba Allah',share:8,uang:0,piutang:28000000,status:'Piutang',tgl:''},
+    {id:'m62',name:'Bapak Wahyu',share:1,uang:0,piutang:3500000,status:'Piutang',tgl:''},
+  ]},
+  {id:'DRM0020',code:'DRM0020',name:'Sragen (SRGN)',model:'Full Ownership',status:'booking',price:550000000,note:'',mitras:[
+    {id:'m63',name:'Nur Hidayah',share:100,uang:55000000,piutang:495000000,status:'DP',tgl:''},
+  ]},
+  {id:'DRM0021',code:'DRM0021',name:'Solo II',model:'Full Ownership',status:'booking',price:550000000,note:'',mitras:[
+    {id:'m64',name:'Bapak Soebakdi',share:100,uang:500000,piutang:549500000,status:'Booking',tgl:''},
+  ]},
+  {id:'DRM0022',code:'DRM0022',name:'Klaten (KLT)',model:'Full Ownership',status:'booking',price:550000000,note:'',mitras:[
+    {id:'m65',name:'Ibu Vicka Audiawati',share:100,uang:500000,piutang:549500000,status:'Booking',tgl:'2026-05-30'},
+  ]},
+  {id:'DRM0023',code:'DRM0023',name:'Semarang II',model:'Konsorsium Mitra',status:'open',price:550000000,note:'Target closing Juni 2026',mitras:[]},
+  {id:'DRM0024',code:'DRM0024',name:'Sukabumi',model:'Konsorsium Mitra',status:'open',price:550000000,note:'Target closing Juni 2026',mitras:[]},
+];
+
+let currentId=null;
+
+function uid(){return 'm'+Date.now()+Math.floor(Math.random()*9999)}
+function fmtRp(n){if(!n||n==0)return '–';return 'Rp '+Number(n).toLocaleString('id-ID')}
+function fmtPct(n){return (Math.round(n*100)/100)+'%'}
+function getBranch(id){return branches.find(b=>b.id===id)}
+function tShare(ms){return ms.reduce((s,m)=>s+(+m.share||0),0)}
+function tUang(ms){return ms.reduce((s,m)=>s+(+m.uang||0),0)}
+function tPiutang(ms){return ms.reduce((s,m)=>s+(+m.piutang||0),0)}
+
+function getBC(s){const m={'Lunas':'b-lunas','Booking':'b-booking','DP':'b-dp','Piutang':'b-piutang'};return m[s]||'b-dev'}
+
+function renderSidebar(filter=''){
+  document.getElementById('branch-count').textContent=branches.length;
+  const fl=branches.filter(b=>b.name.toLowerCase().includes(filter.toLowerCase())||b.code.toLowerCase().includes(filter.toLowerCase()));
+  document.getElementById('branch-list').innerHTML=fl.map(b=>`
+    <div class="bi ${b.id===currentId?'active':''}" onclick="selectBranch('${b.id}')">
+      <span class="bi-code">${b.code}</span>
+      <span class="bi-name">${b.name}</span>
+      <span class="bi-dot ${DC[b.status]||'dot-dev'}"></span>
+    </div>
+  `).join('');
+}
+function filterBranches(v){renderSidebar(v)}
+
+function selectBranch(id){
+  currentId=id;
+  document.getElementById('welcome-state').style.display='none';
+  document.getElementById('summary-view').style.display='none';
+  document.getElementById('recap-view').style.display='none';
+  document.getElementById('branch-detail').style.display='block';
+  renderSidebar(document.getElementById('search-input').value);
+  renderDetail(id);
+}
+
+function renderDetail(id){
+  const b=getBranch(id);if(!b)return;
+  const panel=document.getElementById('branch-detail');
+  const ts=tShare(b.mitras),tu=tUang(b.mitras),tp=tPiutang(b.mitras);
+  const sisa=Math.max(0,100-ts);
+  const sisaRp=b.price>0?Math.max(0,b.price-tu):0;
+
+  // donut
+  const r=50,cx=65,cy=65,circ=2*Math.PI*r;
+  let off=0;
+  const segs=b.mitras.map((m,i)=>{
+    const pct=(+m.share)/100;const dash=pct*circ;
+    const s=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${COLORS[i%COLORS.length]}" stroke-width="13" stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-off}" stroke-linecap="butt"/>`;
+    off+=dash;return s;
+  });
+  if(sisa>0){const dash=(sisa/100)*circ;segs.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2A3249" stroke-width="13" stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-off}" stroke-linecap="butt"/>`)}
+
+  const stackSegs=b.mitras.map((m,i)=>`<div class="seg" style="flex:${m.share};background:${COLORS[i%COLORS.length]};min-width:${m.share>0?'2px':'0'}" title="${m.name}: ${m.share}%"></div>`).join('');
+  const sisaSeg=sisa>0?`<div class="seg-sisa" style="flex:${sisa}" title="Sisa kuota ${sisa.toFixed(1)}%"></div>`:'';
+
+  panel.innerHTML=`
+    <div class="bph">
+      <div>
+        <div class="bph-code">${b.code}</div>
+        <div class="bph-name">${b.name}</div>
+        <div class="bph-meta">
+          <span>🏗️ ${b.model}</span>
+          <span><span class="badge ${SB[b.status]||'b-dev'}">${SL[b.status]||b.status}</span></span>
+          <span>💰 ${fmtRp(b.price)}</span>
+        </div>
+      </div>
+      <div class="bph-actions">
+        <button class="btn btn-outline btn-sm action-btn" data-action="edit-branch" data-bid="${b.id}">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm action-btn" data-action="del-branch" data-bid="${b.id}">🗑️ Hapus</button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="sc"><div class="sc-lbl">Total Mitra</div><div class="sc-val b">${b.mitras.length}</div><div class="sc-sub">pemegang saham</div></div>
+      <div class="sc"><div class="sc-lbl">Kuota Terisi</div><div class="sc-val ${ts>=100?'g':ts>=50?'b':'a'}">${fmtPct(ts)}</div><div class="sc-sub">${sisa>0?'Sisa '+fmtPct(sisa):'Full 100%'}</div></div>
+      <div class="sc"><div class="sc-lbl">Total Uang Masuk</div><div class="sc-val g" style="font-size:15px">${fmtRp(tu)}</div><div class="sc-sub">${b.price>0?'Target: '+fmtRp(b.price):''}</div></div>
+      <div class="sc"><div class="sc-lbl">Total Piutang</div><div class="sc-val ${tp>0?'r':'g'}" style="font-size:15px">${tp>0?fmtRp(tp):'Nihil'}</div><div class="sc-sub">${tp>0?'perlu diselesaikan':'tidak ada piutang'}</div></div>
+    </div>
+
+    ${tp>0?`<div class="alert al-amber" style="margin-bottom:14px">⚠️ Total piutang aktif: <strong>${fmtRp(tp)}</strong> — perlu tindak lanjut</div>`:''}
+    ${b.note?`<div class="alert al-amber" style="margin-bottom:14px">📌 ${b.note}</div>`:''}
+
+    <div class="os">
+      <div class="os-hdr">
+        <div class="os-title">👥 Data Kepemilikan Mitra</div>
+        <div class="os-actions">
+          <button class="btn btn-primary btn-sm action-btn" data-action="add-mitra" data-bid="${b.id}">+ Tambah Mitra</button>
+        </div>
+      </div>
+
+      ${b.mitras.length===0?`
+        <div class="empty" style="padding:40px">
+          <div class="empty-icon">👤</div>
+          <div class="empty-title">Belum ada mitra</div>
+          <div class="empty-sub">Klik "+ Tambah Mitra" untuk menambahkan pemegang saham</div>
+        </div>
+      `:`
+        <div class="os-body">
+          <div class="donut-side">
+            <div class="donut-wrap">
+              <svg viewBox="0 0 130 130"><g>${segs.join('')}</g></svg>
+              <div class="donut-center">
+                <div class="donut-pct" style="color:${ts>=100?'var(--teal)':ts>=50?'var(--blue)':'var(--amber)'}">${Math.round(ts)}%</div>
+                <div class="donut-lbl">Terisi</div>
+              </div>
+            </div>
+            <div class="legend">
+              ${b.mitras.map((m,i)=>`
+                <div class="li">
+                  <span class="li-dot" style="background:${COLORS[i%COLORS.length]}"></span>
+                  <span class="li-name" title="${m.name}">${m.name.split(' ').slice(0,2).join(' ')}</span>
+                  <span class="li-pct" style="color:${COLORS[i%COLORS.length]}">${fmtPct(m.share)}</span>
+                </div>
+              `).join('')}
+              ${sisa>0?`<div class="li"><span class="li-dot" style="background:#2A3249"></span><span class="li-name">Sisa Kuota</span><span class="li-pct" style="color:var(--text3)">${fmtPct(sisa)}</span></div>`:''}
+            </div>
+          </div>
+          <div class="table-side">
+            <table class="mt">
+              <thead>
+                <tr>
+                  <th>#</th><th>Nama Mitra</th><th>Share (%)</th>
+                  <th>Uang Masuk</th><th class="col-hide-mobile">Sisa Piutang</th>
+                  <th class="col-hide-mobile">Tgl Masuk</th><th>Status</th><th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${b.mitras.map((m,i)=>`
+                  <tr>
+                    <td style="color:var(--text3);font-size:11px">${i+1}</td>
+                    <td><div style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;border-radius:50%;background:${COLORS[i%COLORS.length]};flex-shrink:0"></span><span style="font-weight:500">${m.name}</span></div></td>
+                    <td>
+                      <div class="sbw">
+                        <div class="sb"><div class="sf" style="width:${Math.min(100,m.share)}%;background:${COLORS[i%COLORS.length]}"></div></div>
+                        <span class="spct" style="color:${COLORS[i%COLORS.length]}">${fmtPct(m.share)}</span>
+                      </div>
+                    </td>
+                    <td class="mono">${fmtRp(m.uang)}</td>
+                    <td class="mono col-hide-mobile">${m.piutang>0?`<span style="color:var(--red)">${fmtRp(m.piutang)}</span>`:'–'}</td>
+                    <td class="col-hide-mobile" style="font-size:11px;color:var(--text3)">${m.tgl||'–'}</td>
+                    <td><span class="badge ${getBC(m.status)}">${m.status}</span></td>
+                    <td>
+                      <div style="display:flex;gap:4px">
+                        <button class="btn btn-outline btn-sm action-btn" data-action="edit-mitra" data-bid="${b.id}" data-mid="${m.id}" title="Edit">✏️</button>
+                        <button class="btn btn-danger btn-sm action-btn" data-action="del-mitra" data-bid="${b.id}" data-mid="${m.id}">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2" style="color:var(--text)">TOTAL</td>
+                  <td><span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${ts>=100?'var(--teal)':'var(--amber)'}">${fmtPct(ts)}</span></td>
+                  <td class="mono" style="color:var(--teal)">${fmtRp(tu)}</td>
+                  <td class="mono col-hide-mobile" style="color:${tp>0?'var(--red)':'var(--text3)'}">${tp>0?fmtRp(tp):'–'}</td>
+                  <td class="col-hide-mobile" colspan="3"></td>
+                  <td class="col-show-mobile" colspan="2"></td>
+                </tr>
+                ${sisa>0?`<tr>
+                  <td colspan="2" style="color:var(--amber)">SISA KUOTA</td>
+                  <td><span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber)">${fmtPct(sisa)}</span></td>
+                  <td class="mono" style="color:var(--amber)">${b.price>0?fmtRp(sisaRp):'–'}</td>
+                  <td colspan="4"></td>
+                </tr>`:''}
+              </tfoot>
+            </table>
+          </div>
+        </div>
+        <div class="sb-section">
+          <div class="sb-lbl">Komposisi Kepemilikan Visual</div>
+          <div class="stacked">${stackSegs}${sisaSeg}</div>
+          <div class="seg-legend">
+            ${b.mitras.map((m,i)=>`<div class="sli"><span class="sli-dot" style="background:${COLORS[i%COLORS.length]}"></span>${m.name.split(' ')[0]}: ${fmtPct(m.share)}</div>`).join('')}
+            ${sisa>0?`<div class="sli"><span class="sli-dot" style="background:#2A3249"></span>Sisa: ${fmtPct(sisa)}</div>`:''}
+          </div>
+        </div>
+      `}
+    </div>
+  `;
+}
+
+function showSummary(){
+  currentId=null;
+  document.getElementById('welcome-state').style.display='none';
+  document.getElementById('branch-detail').style.display='none';
+  document.getElementById('recap-view').style.display='none';
+  document.getElementById('summary-view').style.display='block';
+  renderSidebar(document.getElementById('search-input').value);
+  const totalM=branches.reduce((s,b)=>s+b.mitras.length,0);
+  const totalU=branches.reduce((s,b)=>s+tUang(b.mitras),0);
+  const totalP=branches.reduce((s,b)=>s+tPiutang(b.mitras),0);
+  const soldOut=branches.filter(b=>b.status==='lunas').length;
+  document.getElementById('summary-view').innerHTML=`
+    <div style="margin-bottom:20px">
+      <h2 style="font-size:19px;font-weight:800;margin-bottom:3px">Ringkasan Seluruh Cabang</h2>
+      <p style="font-size:12px;color:var(--text3)">${branches.length} cabang · ${totalM} mitra · Real-time</p>
+    </div>
+    <div class="stats-row" style="margin-bottom:20px">
+      <div class="sc"><div class="sc-lbl">Total Cabang</div><div class="sc-val b">${branches.length}</div></div>
+      <div class="sc"><div class="sc-lbl">Sold Out</div><div class="sc-val g">${soldOut}</div></div>
+      <div class="sc"><div class="sc-lbl">Total Uang Masuk</div><div class="sc-val g" style="font-size:14px">${fmtRp(totalU)}</div></div>
+      <div class="sc"><div class="sc-lbl">Total Piutang</div><div class="sc-val ${totalP>0?'r':'g'}" style="font-size:14px">${totalP>0?fmtRp(totalP):'Nihil'}</div></div>
+    </div>
+    <div class="sum-grid">
+      ${branches.map(b=>{
+        const ts=tShare(b.mitras),sisa=100-ts;
+        const fi=ts>=100?'fi-g':ts>=50?'fi-a':'fi-d';
+        return `
+          <div class="sum-card" onclick="selectBranch('${b.id}')">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span class="sum-code">${b.code}</span>
+              <span class="badge ${SB[b.status]||'b-dev'}">${SL[b.status]||b.status}</span>
+            </div>
+            <div class="sum-name">${b.name}</div>
+            <div class="sum-meta">${b.model} · ${b.mitras.length} mitra</div>
+            <div class="fill-bar"><div class="fill-inner ${fi}" style="width:${Math.min(100,ts)}%"></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;font-weight:700;color:var(--text2)">${fmtPct(ts)} terisi</span>
+              ${tPiutang(b.mitras)>0?`<span style="font-size:10px;color:var(--red)">⚠️ Piutang</span>`:''}
+              ${sisa>0&&ts>0?`<span style="font-size:10px;color:var(--amber)">Sisa ${fmtPct(sisa)}</span>`:''}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ── BRANCH CRUD ──
+function openAddBranch(){
+  document.getElementById('eb-id').value='';
+  document.getElementById('mb-title').textContent='Tambah Cabang Baru';
+  ['ib-code','ib-name','ib-price','ib-note'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('ib-model').value='Konsorsium Mitra';
+  document.getElementById('ib-status').value='dev';
+  openModal('modal-branch');
+}
+function openEditBranch(id){
+  const b=getBranch(id);if(!b)return;
+  document.getElementById('eb-id').value=id;
+  document.getElementById('mb-title').textContent='Edit Cabang';
+  document.getElementById('ib-code').value=b.code;
+  document.getElementById('ib-name').value=b.name;
+  document.getElementById('ib-model').value=b.model;
+  document.getElementById('ib-status').value=b.status;
+  document.getElementById('ib-price').value=b.price||'';
+  document.getElementById('ib-note').value=b.note||'';
+  openModal('modal-branch');
+}
+function saveBranch(){
+  const eid=document.getElementById('eb-id').value;
+  const code=document.getElementById('ib-code').value.trim();
+  const name=document.getElementById('ib-name').value.trim();
+  if(!code||!name){toast('Kode dan Nama wajib diisi!','⚠️');return}
+  if(eid){
+    const b=getBranch(eid);
+    b.code=code;b.name=name;b.model=document.getElementById('ib-model').value;
+    b.status=document.getElementById('ib-status').value;
+    b.price=+document.getElementById('ib-price').value||0;
+    b.note=document.getElementById('ib-note').value;
+    closeModal('modal-branch');toast('Cabang diperbarui','✅');
+    renderSidebar();renderDetail(eid);
+  } else {
+    if(branches.find(b=>b.id===code)){toast('Kode DRM sudah ada!','⚠️');return}
+    branches.push({id:code,code,name,model:document.getElementById('ib-model').value,status:document.getElementById('ib-status').value,price:+document.getElementById('ib-price').value||0,note:document.getElementById('ib-note').value,mitras:[]});
+    closeModal('modal-branch');toast('Cabang ditambahkan','✅');
+    renderSidebar();selectBranch(code);
+  }
+}
+function confirmDelBranch(id){
+  const b=getBranch(id);
+  document.getElementById('cfm-title').textContent=`Hapus cabang "${b.name}"?`;
+  document.getElementById('cfm-sub').textContent=`Semua data mitra (${b.mitras.length}) akan ikut terhapus.`;
+  document.getElementById('cfm-ok').onclick=()=>delBranch(id);
+  openModal('modal-confirm');
+}
+function delBranch(id){
+  branches=branches.filter(b=>b.id!==id);
+  closeModal('modal-confirm');currentId=null;
+  document.getElementById('branch-detail').style.display='none';
+  document.getElementById('welcome-state').style.display='flex';
+  renderSidebar();toast('Cabang dihapus','🗑️');
+}
+
+// ── MITRA CRUD ──
+function openAddMitra(bid){
+  const b=getBranch(bid);
+  document.getElementById('em-id').value='';
+  document.getElementById('em-branch').value=bid;
+  document.getElementById('mm-title').textContent='Tambah Mitra Baru';
+  ['im-name','im-share','im-uang','im-piutang','im-tgl'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('im-status').value='Lunas';
+  document.getElementById('im-calc-info').style.display='none';
+  document.getElementById('im-share-auto').textContent='';
+  document.getElementById('im-price-display').textContent = b&&b.price ? 'Rp '+Number(b.price).toLocaleString('id-ID') : '–';
+  openModal('modal-mitra');
+}
+function openEditMitra(bid,mid){
+  const b=getBranch(bid);const m=b.mitras.find(x=>x.id===mid);if(!m)return;
+  document.getElementById('em-id').value=mid;
+  document.getElementById('em-branch').value=bid;
+  document.getElementById('mm-title').textContent='Edit Mitra';
+  document.getElementById('im-name').value=m.name;
+  document.getElementById('im-share').value=m.share;
+  document.getElementById('im-status').value=m.status;
+  document.getElementById('im-uang').value=m.uang||'';
+  document.getElementById('im-piutang').value=m.piutang||'';
+  document.getElementById('im-tgl').value=m.tgl||'';
+  document.getElementById('im-price-display').textContent = b&&b.price ? 'Rp '+Number(b.price).toLocaleString('id-ID') : '–';
+  document.getElementById('im-calc-info').style.display='none';
+  document.getElementById('im-share-auto').textContent='';
+  // show calc info if uang already filled
+  if(m.uang && b && b.price) calcShareFromUang();
+  openModal('modal-mitra');
+}
+
+function calcShareFromUang(){
+  const bid=document.getElementById('em-branch').value;
+  const b=getBranch(bid);
+  const uang=+document.getElementById('im-uang').value||0;
+  const price=b&&b.price?+b.price:0;
+  const info=document.getElementById('im-calc-info');
+  const autoLbl=document.getElementById('im-share-auto');
+  if(!price||!uang){info.style.display='none';autoLbl.textContent='';return;}
+  const pct=Math.round((uang/price)*10000)/100; // 2 decimal
+  document.getElementById('im-share').value=pct;
+  autoLbl.textContent='(otomatis)';
+  info.style.display='block';
+  info.textContent=`Rp ${Number(uang).toLocaleString('id-ID')} ÷ Rp ${Number(price).toLocaleString('id-ID')} = ${pct}%`;
+  // auto set status
+  const piutang=+document.getElementById('im-piutang').value||0;
+  if(uang>=price && piutang===0) document.getElementById('im-status').value='Lunas';
+  else if(uang>0 && uang<price) document.getElementById('im-status').value='DP';
+}
+
+function calcUangFromShare(){
+  const bid=document.getElementById('em-branch').value;
+  const b=getBranch(bid);
+  const pct=+document.getElementById('im-share').value||0;
+  const price=b&&b.price?+b.price:0;
+  const info=document.getElementById('im-calc-info');
+  const autoLbl=document.getElementById('im-share-auto');
+  if(!price||!pct){if(!document.getElementById('im-uang').value){info.style.display='none';autoLbl.textContent='';}return;}
+  const uang=Math.round(price*pct/100);
+  if(!document.getElementById('im-uang').value){
+    document.getElementById('im-uang').value=uang;
+  }
+  autoLbl.textContent='';
+  info.style.display='block';
+  info.textContent=`${pct}% × Rp ${Number(price).toLocaleString('id-ID')} = Rp ${Number(uang).toLocaleString('id-ID')}`;
+}
+function saveMitra(){
+  const eid=document.getElementById('em-id').value;
+  const bid=document.getElementById('em-branch').value;
+  const b=getBranch(bid);
+  const name=document.getElementById('im-name').value.trim();
+  const share=+document.getElementById('im-share').value||0;
+  if(!name){toast('Nama mitra wajib diisi!','⚠️');return}
+  const curTotal=tShare(b.mitras)-(eid?(+b.mitras.find(m=>m.id===eid)?.share||0):0);
+  if(curTotal+share>100.01){toast(`Total share melebihi 100%! (sisa: ${(100-curTotal).toFixed(1)}%)`,'⚠️');return}
+  const data={name,share,status:document.getElementById('im-status').value,uang:+document.getElementById('im-uang').value||0,piutang:+document.getElementById('im-piutang').value||0,tgl:document.getElementById('im-tgl').value||''};
+  if(eid){Object.assign(b.mitras.find(x=>x.id===eid),data);toast('Mitra diperbarui','✅')}
+  else{b.mitras.push({id:uid(),...data});toast('Mitra ditambahkan','✅')}
+  closeModal('modal-mitra');renderDetail(bid);
+}
+function confirmDelMitra(bid,mid,mname){
+  document.getElementById('cfm-title').textContent=`Hapus mitra "${mname}"?`;
+  document.getElementById('cfm-sub').textContent='Data kepemilikan mitra ini akan dihapus permanen.';
+  document.getElementById('cfm-ok').onclick=()=>delMitra(bid,mid);
+  openModal('modal-confirm');
+}
+function delMitra(bid,mid){
+  getBranch(bid).mitras=getBranch(bid).mitras.filter(m=>m.id!==mid);
+  closeModal('modal-confirm');renderDetail(bid);toast('Mitra dihapus','🗑️');
+}
+
+// ── RECAP DASHBOARD ──
+let recapFilter='all';
+
+function showRecap(){
+  currentId=null;
+  document.getElementById('welcome-state').style.display='none';
+  document.getElementById('branch-detail').style.display='none';
+  document.getElementById('summary-view').style.display='none';
+  document.getElementById('recap-view').style.display='block';
+  renderSidebar(document.getElementById('search-input').value);
+  renderRecap();
+}
+
+function renderRecap(){
+  const rv=document.getElementById('recap-view');
+
+  // group branches by status category
+  const groups={
+    running: branches.filter(b=>b.status==='lunas'),
+    so:      branches.filter(b=>b.status==='so'),
+    go:      branches.filter(b=>b.status==='go'),
+    pending: branches.filter(b=>b.status==='open'||b.status==='booking'),
+    dev:     branches.filter(b=>b.status==='dev'),
+  };
+
+  const totalU=branches.reduce((s,b)=>s+tUang(b.mitras),0);
+  const totalP=branches.reduce((s,b)=>s+tPiutang(b.mitras),0);
+  const totalM=branches.reduce((s,b)=>s+b.mitras.length,0);
+
+  // filter for table
+  let filtered=recapFilter==='all'?branches:groups[recapFilter]||branches;
+
+  // KPI cards
+  const kpis=[
+    {key:'running',cls:'running',icon:'🟢',lbl:'Running / Aktif',val:groups.running.length,sub:`${groups.running.reduce((s,b)=>s+b.mitras.length,0)} mitra`},
+    {key:'so',cls:'so',icon:'🔵',lbl:'Soft Opening',val:groups.so.length,sub:'Menuju Grand Opening'},
+    {key:'go',cls:'go',icon:'🟣',lbl:'Grand Opening',val:groups.go.length,sub:'Baru beroperasi'},
+    {key:'pending',cls:'pending',icon:'🟡',lbl:'Pending / Open Sale',val:groups.pending.length,sub:`${groups.pending.reduce((s,b)=>s+b.mitras.length,0)} mitra`},
+    {key:'dev',cls:'dev',icon:'⚫',lbl:'Dalam Pembangunan',val:groups.dev.length,sub:'Belum beroperasi'},
+  ];
+
+  const laneConfig=[
+    {key:'running',cls:'running',title:'🟢 Running / Aktif',items:groups.running},
+    {key:'so',cls:'so',title:'🔵 Soft Opening',items:groups.so},
+    {key:'go',cls:'go',title:'🟣 Grand Opening',items:groups.go},
+    {key:'pending',cls:'pending',title:'🟡 Pending / Open Sale',items:groups.pending},
+    {key:'dev',cls:'dev',title:'⚫ Pembangunan',items:groups.dev},
+  ];
+
+  function kcard(b){
+    const ts=tShare(b.mitras),tp=tPiutang(b.mitras),tu=tUang(b.mitras);
+    const sisa=Math.max(0,100-ts);
+    const fillColor=ts>=100?'var(--teal)':ts>=60?'var(--blue)':ts>=30?'var(--amber)':'var(--red)';
+    return `
+      <div class="kcard" onclick="selectBranch('${b.id}')">
+        ${tp>0?`<span class="kcard-alert" title="Ada piutang aktif">⚠️</span>`:''}
+        <div class="kcard-code">${b.code}</div>
+        <div class="kcard-name">${b.name}</div>
+        <div class="kcard-model">${b.model}</div>
+        <div class="kcard-fill"><div class="kcard-fill-inner" style="width:${Math.min(100,ts)}%;background:${fillColor}"></div></div>
+        <div class="kcard-meta">
+          <div class="kcard-mitra">
+            <span style="font-size:13px">👥</span>
+            <span>${b.mitras.length} mitra · ${fmtPct(ts)}</span>
+          </div>
+          <span>${fmtRp(tu)==='-'?'–':fmtRp(tu)}</span>
+        </div>
+        ${sisa>0&&ts>0?`<div style="font-size:10px;color:var(--amber);margin-top:5px">Sisa kuota: ${fmtPct(sisa)}</div>`:''}
+        ${b.note?`<div class="kcard-note">📌 ${b.note.slice(0,60)}${b.note.length>60?'…':''}</div>`:''}
+      </div>`;
+  }
+
+  rv.innerHTML=`
+    <div style="margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <h2 style="font-size:19px;font-weight:800;margin-bottom:3px">Rekap Status Cabang</h2>
+        <p style="font-size:12px;color:var(--text3)">${branches.length} cabang · ${totalM} mitra · Total masuk ${fmtRp(totalU)}</p>
+      </div>
+      ${totalP>0?`<div style="background:var(--red-dim);border:1px solid rgba(255,92,92,.3);color:var(--red);padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600">⚠️ Total piutang aktif: ${fmtRp(totalP)}</div>`:''}
+    </div>
+
+    <div class="recap-top">
+      ${kpis.map(k=>`
+        <div class="rkpi rkpi-${k.cls} ${recapFilter===k.key?'active-filter':''}" onclick="setRecapFilter('${k.key}')">
+          <div class="rkpi-icon">${k.icon}</div>
+          <div class="rkpi-lbl">${k.lbl}</div>
+          <div class="rkpi-val">${k.val}</div>
+          <div class="rkpi-sub">${k.sub}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="kanban" id="kanban-board">
+      ${laneConfig.map(lane=>`
+        <div class="lane">
+          <div class="lane-hdr lane-hdr-${lane.cls}">
+            <span class="lane-title">${lane.title}</span>
+            <span class="lane-badge">${lane.items.length}</span>
+          </div>
+          <div class="lane-body">
+            ${lane.items.length===0
+              ?`<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:12px">Tidak ada cabang</div>`
+              :lane.items.map(b=>kcard(b)).join('')
+            }
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="recap-table-wrap">
+      <div class="recap-table-hdr">
+        <span class="recap-table-title">📋 Tabel Detail Semua Cabang</span>
+        <div class="filter-tabs">
+          <button class="ftab ${recapFilter==='all'?'active':''}" onclick="setRecapFilter('all')">Semua</button>
+          <button class="ftab ${recapFilter==='running'?'active':''}" onclick="setRecapFilter('running')">Running</button>
+          <button class="ftab ${recapFilter==='so'?'active':''}" onclick="setRecapFilter('so')">Soft Opening</button>
+          <button class="ftab ${recapFilter==='go'?'active':''}" onclick="setRecapFilter('go')">Grand Opening</button>
+          <button class="ftab ${recapFilter==='pending'?'active':''}" onclick="setRecapFilter('pending')">Pending</button>
+          <button class="ftab ${recapFilter==='dev'?'active':''}" onclick="setRecapFilter('dev')">Pembangunan</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="rtbl">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Kode</th>
+              <th>Nama Cabang</th>
+              <th>Model</th>
+              <th>Status</th>
+              <th>Mitra</th>
+              <th>Kuota</th>
+              <th>Uang Masuk</th>
+              <th>Piutang</th>
+              <th>Harga Cabang</th>
+              <th>Catatan</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map((b,i)=>{
+              const ts=tShare(b.mitras),tu=tUang(b.mitras),tp=tPiutang(b.mitras);
+              const hasPiutang=tp>0;
+              return `
+                <tr class="${hasPiutang?'piutang-row':''}" onclick="selectBranch('${b.id}')" style="cursor:pointer">
+                  <td style="color:var(--text3);font-size:11px">${i+1}</td>
+                  <td><span style="font-family:var(--mono);font-size:10px;font-weight:600;color:var(--teal);background:var(--teal-dim);padding:2px 6px;border-radius:4px">${b.code}</span></td>
+                  <td style="font-weight:600">${b.name}</td>
+                  <td style="font-size:11px;color:var(--text3)">${b.model}</td>
+                  <td><span class="badge ${SB[b.status]||'b-dev'}">${SL[b.status]||b.status}</span></td>
+                  <td style="text-align:center">${b.mitras.length}</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:7px;min-width:100px">
+                      <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+                        <div style="height:100%;width:${Math.min(100,ts)}%;background:${ts>=100?'var(--teal)':ts>=60?'var(--blue)':'var(--amber)'};border-radius:3px"></div>
+                      </div>
+                      <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text2);white-space:nowrap">${fmtPct(ts)}</span>
+                    </div>
+                  </td>
+                  <td class="mono" style="color:var(--teal)">${fmtRp(tu)}</td>
+                  <td class="mono" style="color:${tp>0?'var(--red)':'var(--text3)'}">${tp>0?`<b>${fmtRp(tp)}</b>`:'–'}</td>
+                  <td class="mono">${fmtRp(b.price)}</td>
+                  <td style="font-size:11px;color:var(--text3);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.note||'–'}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background:var(--card2)">
+              <td colspan="5" style="font-weight:700;color:var(--text);padding:10px 14px">TOTAL (${filtered.length} cabang)</td>
+              <td style="font-weight:700;color:var(--blue);padding:10px 14px;text-align:center">${filtered.reduce((s,b)=>s+b.mitras.length,0)}</td>
+              <td style="padding:10px 14px"></td>
+              <td style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--teal);padding:10px 14px">${fmtRp(filtered.reduce((s,b)=>s+tUang(b.mitras),0))}</td>
+              <td style="font-family:var(--mono);font-size:11px;font-weight:700;padding:10px 14px;color:${filtered.reduce((s,b)=>s+tPiutang(b.mitras),0)>0?'var(--red)':'var(--text3)'}">${fmtRp(filtered.reduce((s,b)=>s+tPiutang(b.mitras),0))}</td>
+              <td style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text2);padding:10px 14px">${fmtRp(filtered.reduce((s,b)=>s+(+b.price||0),0))}</td>
+              <td style="padding:10px 14px"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function setRecapFilter(key){
+  recapFilter=key;
+  renderRecap();
+}
+function openModal(id){document.getElementById(id).classList.add('show')}
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show')}));
+
+// ── EVENT DELEGATION: all dynamic action buttons ──
+document.getElementById('main-panel').addEventListener('click', function(e) {
+  const btn = e.target.closest('.action-btn');
+  if (!btn) return;
+  e.stopPropagation();
+  const action = btn.dataset.action;
+  const bid    = btn.dataset.bid;
+  const mid    = btn.dataset.mid;
+  if      (action === 'edit-branch') { openEditBranch(bid); }
+  else if (action === 'del-branch')  { confirmDelBranch(bid); }
+  else if (action === 'add-mitra')   { openAddMitra(bid); }
+  else if (action === 'edit-mitra')  { openEditMitra(bid, mid); }
+  else if (action === 'del-mitra')   {
+    const b = getBranch(bid);
+    const m = b && b.mitras.find(x => x.id === mid);
+    if (m) confirmDelMitra(bid, mid, m.name);
+  }
+});
+
+function toast(msg,icon='✅'){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  document.getElementById('toast-icon').textContent=icon;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+renderSidebar();
+selectBranch('DRM0001');
+</script>
+</body>
+</html>
