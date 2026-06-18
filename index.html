@@ -270,9 +270,10 @@ table.mt tfoot td:nth-child(2){background:var(--card2)}
   </div>
   <div class="topbar-right">
     <span id="sync-badge" style="font-size:11px;font-weight:600;color:var(--text3);margin-right:4px;white-space:nowrap">🔌 Menghubungkan...</span>
+    <button class="btn btn-outline btn-sm" id="lock-toggle-btn" onclick="onLockToggleClick()" style="white-space:nowrap">🔒 Mode Lihat</button>
     <button class="btn btn-outline" onclick="showRecap()">🗂️ Rekap</button>
     <button class="btn btn-outline" onclick="showSummary()">📊 Ringkasan</button>
-    <button class="btn btn-primary" onclick="openAddBranch()">+ Tambah Cabang</button>
+    <button class="btn btn-primary" onclick="requireAuth(openAddBranch)">+ Tambah Cabang</button>
   </div>
 </div>
 
@@ -415,6 +416,27 @@ table.mt tfoot td:nth-child(2){background:var(--card2)}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-confirm')">Batal</button>
       <button class="btn btn-danger" id="cfm-ok">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PASSWORD GATE -->
+<div class="overlay" id="modal-pw">
+  <div class="modal" style="width:360px">
+    <div class="modal-hdr">
+      <span class="modal-title">🔒 Masukkan Password</span>
+      <button class="modal-close" onclick="pendingAction=null;closeModal('modal-pw')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:4px">Diperlukan untuk menambah, mengubah, atau menghapus data.</p>
+      <div class="fg">
+        <input type="password" id="pw-input" placeholder="Password" autocomplete="off" onkeydown="if(event.key==='Enter')submitPassword()">
+      </div>
+      <div id="pw-error" style="display:none;font-size:11px;color:var(--red)">Password salah, coba lagi.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="pendingAction=null;closeModal('modal-pw')">Batal</button>
+      <button class="btn btn-primary" onclick="submitPassword()">Masuk</button>
     </div>
   </div>
 </div>
@@ -699,6 +721,102 @@ function refreshCurrentView(){
 }
 
 let currentId=null;
+
+// ══════════════════════════════════════
+//  PASSWORD GATE — read-only by default, password required to edit
+// ══════════════════════════════════════
+const DEFAULT_PASSWORD = 'mitra2026'; // password awal default, ganti dokumen config/auth di Firestore untuk mengubah
+let isUnlocked = sessionStorage.getItem('dm_unlocked') === '1';
+let pendingAction = null; // fungsi yang akan dijalankan setelah password benar
+
+async function sha256(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function getStoredPasswordHash(){
+  try{
+    const { db, doc, getDoc } = window.__fb;
+    const snap = await getDoc(doc(db,'config','auth'));
+    if(snap.exists() && snap.data().passwordHash){
+      return snap.data().passwordHash;
+    }
+  }catch(err){
+    console.error('Gagal ambil config auth, pakai default:', err);
+  }
+  // belum ada config tersimpan -> pakai default & simpan otomatis
+  const defaultHash = await sha256(DEFAULT_PASSWORD);
+  try{
+    const { db, doc, setDoc } = window.__fb;
+    await setDoc(doc(db,'config','auth'), { passwordHash: defaultHash });
+  }catch(e){ /* abaikan jika gagal simpan, tetap bisa login dgn default */ }
+  return defaultHash;
+}
+
+function updateLockUI(){
+  const btn = document.getElementById('lock-toggle-btn');
+  if(!btn) return;
+  if(isUnlocked){
+    btn.textContent = '🔓 Mode Edit';
+    btn.classList.remove('btn-outline');
+    btn.classList.add('btn-amber');
+  } else {
+    btn.textContent = '🔒 Mode Lihat';
+    btn.classList.remove('btn-amber');
+    btn.classList.add('btn-outline');
+  }
+}
+
+function onLockToggleClick(){
+  if(isUnlocked){
+    // logout
+    isUnlocked = false;
+    sessionStorage.removeItem('dm_unlocked');
+    updateLockUI();
+    toast('Kembali ke mode lihat saja','🔒');
+  } else {
+    openPasswordModal(null);
+  }
+}
+
+// Buka modal password. Jika action diberikan, action akan dijalankan otomatis
+// setelah password benar (dipakai saat menekan tombol Tambah/Edit/Hapus).
+function openPasswordModal(action){
+  if(isUnlocked){
+    // sudah dalam mode edit, langsung jalankan
+    if(action) action();
+    return;
+  }
+  pendingAction = action;
+  document.getElementById('pw-input').value='';
+  document.getElementById('pw-error').style.display='none';
+  openModal('modal-pw');
+  setTimeout(()=>document.getElementById('pw-input')?.focus(), 100);
+}
+
+async function submitPassword(){
+  const input = document.getElementById('pw-input').value;
+  if(!input){ return; }
+  const inputHash = await sha256(input);
+  const storedHash = await getStoredPasswordHash();
+  if(inputHash === storedHash){
+    isUnlocked = true;
+    sessionStorage.setItem('dm_unlocked','1');
+    updateLockUI();
+    closeModal('modal-pw');
+    toast('Mode edit aktif','🔓');
+    if(pendingAction){ pendingAction(); pendingAction=null; }
+  } else {
+    document.getElementById('pw-error').style.display='block';
+  }
+}
+
+// Wrapper: panggil ini sebelum aksi yang mengubah data (tambah/edit/hapus)
+function requireAuth(action){
+  if(isUnlocked){ action(); }
+  else { openPasswordModal(action); }
+}
 
 function uid(){return 'm'+Date.now()+Math.floor(Math.random()*9999)}
 function fmtRp(n){if(!n||n==0)return '–';return 'Rp '+Number(n).toLocaleString('id-ID')}
@@ -1275,7 +1393,7 @@ function setRecapFilter(key){
 }
 function openModal(id){document.getElementById(id).classList.add('show')}
 function closeModal(id){document.getElementById(id).classList.remove('show')}
-document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show')}));
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o){o.classList.remove('show'); if(o.id==='modal-pw') pendingAction=null;}}));
 
 // ── EVENT DELEGATION: all dynamic action buttons ──
 document.getElementById('main-panel').addEventListener('click', function(e) {
@@ -1285,14 +1403,14 @@ document.getElementById('main-panel').addEventListener('click', function(e) {
   const action = btn.dataset.action;
   const bid    = btn.dataset.bid;
   const mid    = btn.dataset.mid;
-  if      (action === 'edit-branch') { openEditBranch(bid); }
-  else if (action === 'del-branch')  { confirmDelBranch(bid); }
-  else if (action === 'add-mitra')   { openAddMitra(bid); }
-  else if (action === 'edit-mitra')  { openEditMitra(bid, mid); }
+  if      (action === 'edit-branch') { requireAuth(()=>openEditBranch(bid)); }
+  else if (action === 'del-branch')  { requireAuth(()=>confirmDelBranch(bid)); }
+  else if (action === 'add-mitra')   { requireAuth(()=>openAddMitra(bid)); }
+  else if (action === 'edit-mitra')  { requireAuth(()=>openEditMitra(bid, mid)); }
   else if (action === 'del-mitra')   {
     const b = getBranch(bid);
     const m = b && b.mitras.find(x => x.id === mid);
-    if (m) confirmDelMitra(bid, mid, m.name);
+    if (m) requireAuth(()=>confirmDelMitra(bid, mid, m.name));
   }
 });
 
@@ -1307,6 +1425,7 @@ function toast(msg,icon='✅'){
 //  INIT — tunggu Firebase SDK siap, lalu mulai sinkronisasi
 // ══════════════════════════════════════
 function startApp(){
+  updateLockUI();
   if(!window.__fb){
     // module script Firebase belum selesai load, coba lagi sebentar
     setTimeout(startApp, 100);
