@@ -43,13 +43,15 @@
   --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#00C896,#4D8EFF);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#000}
-.topbar-title{font-size:14px;font-weight:700}
-.topbar-sub{font-size:11px;color:var(--text3);margin-top:1px}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--font)}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;gap:12px}
+.topbar-left{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#00C896,#4D8EFF);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#000;flex-shrink:0}
+.topbar-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-sub{font-size:11px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+.hamburger-btn{display:none;background:none;border:1px solid var(--border2);color:var(--text);font-size:18px;width:36px;height:36px;border-radius:8px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0}
+.sidebar-close-btn{display:none;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:4px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--font);white-space:nowrap}
 .btn-primary{background:var(--teal);color:#000}
 .btn-primary:hover{background:#00E0A8;transform:translateY(-1px)}
 .btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2)}
@@ -59,11 +61,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .btn-sm{padding:5px 10px;font-size:11px}
 .btn-amber{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber)}
 .btn-amber:hover{background:var(--amber);color:#000}
-.app{display:flex;height:calc(100vh - 57px)}
+.app{display:flex;height:calc(100vh - 57px);position:relative}
 /* sidebar */
-.sidebar{width:260px;min-width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-.sidebar-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.sidebar-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em}
+.sidebar{width:260px;min-width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:transform .25s ease}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150}
+.sidebar-overlay.show{display:block}
+.sidebar-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sidebar-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;flex:1}
 .sbar-count{font-size:11px;font-weight:700;color:var(--teal);background:var(--teal-dim);padding:2px 7px;border-radius:10px}
 .sidebar-search{margin:10px 12px;display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px 10px;gap:7px}
 .sidebar-search input{background:none;border:none;outline:none;font-size:12px;color:var(--text);width:100%;font-family:var(--font)}
@@ -248,20 +252,95 @@ table.mt tfoot td:nth-child(2){background:var(--card2)}
 .ftab.active{background:var(--teal);border-color:var(--teal);color:#000}
 /* piutang highlight */
 .piutang-row td{background:rgba(255,92,92,.04)!important}
-@media(max-width:800px){.recap-top{grid-template-columns:repeat(2,1fr)}.kanban{flex-direction:column}.lane{width:100%;min-width:unset}}
-@media(max-width:700px){
+/* ══════════════════════════════════════
+   RESPONSIVE — Tablet & Mobile
+   ══════════════════════════════════════ */
+
+/* TABLET (≤1024px): sidebar sedikit menyempit, grid menyesuaikan */
+@media(max-width:1024px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .summary-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .pipeline-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+}
+
+/* SMALL TABLET / LARGE PHONE (≤860px): sidebar jadi drawer overlay */
+@media(max-width:860px){
+  .hamburger-btn{display:flex}
+  .sidebar-close-btn{display:block}
+  .topbar-sub{display:none}
+  .recap-top{grid-template-columns:repeat(2,1fr)}
+  .kanban{flex-direction:column}
+  .lane{width:100%;min-width:unset}
+
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;z-index:200;
+    width:280px;min-width:280px;
+    transform:translateX(-100%);
+    box-shadow:4px 0 24px rgba(0,0,0,.4);
+  }
+  .sidebar.open{transform:translateX(0)}
+
+  .main{padding:16px}
   .os-body{flex-direction:column}
   .donut-side{border-right:none;border-bottom:1px solid var(--border)}
+}
+
+/* PHONE (≤640px): topbar ringkas jadi ikon, tombol full-width di modal */
+@media(max-width:640px){
+  .topbar{padding:10px 14px}
+  .topbar-title{font-size:12px;max-width:140px}
+  .logo{width:32px;height:32px;font-size:12px}
+  #sync-badge{display:none}
+  .btn .btn-label{display:none}
+  .btn{padding:7px 10px}
+  .btn-primary .btn-plus{font-size:15px;font-weight:800}
+  #lock-toggle-btn{padding:7px 9px;font-size:13px}
+
+  .stats-row{grid-template-columns:repeat(2,1fr);gap:10px}
+  .sc{padding:12px 14px}
+  .sc-val{font-size:18px}
+
+  .bph{flex-direction:column;align-items:stretch;gap:12px}
+  .bph-actions{justify-content:flex-start}
+  .bph-name{font-size:18px}
+
+  .summary-grid{grid-template-columns:1fr}
+  .pipeline-grid{grid-template-columns:1fr}
+  .recap-top{grid-template-columns:1fr 1fr;gap:8px}
+  .rkpi{padding:12px 14px}
+  .rkpi-val{font-size:22px}
+  .rkpi-icon{font-size:16px}
+
+  .donut-side{min-width:unset;padding:16px}
+  .donut-wrap{width:110px;height:110px}
+
+  .modal{width:100%!important;max-width:100%;border-radius:14px 14px 0 0;position:fixed;bottom:0;left:0;max-height:85vh}
+  .overlay{align-items:flex-end}
+  .frow{grid-template-columns:1fr}
+
+  .filter-tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+  .ftab{flex-shrink:0}
+}
+
+/* VERY SMALL PHONE (≤400px) */
+@media(max-width:400px){
+  .topbar-title{display:none}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .recap-top{grid-template-columns:1fr 1fr}
+  table.mt{min-width:380px}
+}
+
+@media(max-width:700px){
   .col-hide-mobile{display:none}
   table.mt{min-width:420px}
 }
-@media(max-width:800px){.stats-row{grid-template-columns:repeat(2,1fr)}.sidebar{width:200px;min-width:200px}.os-body{flex-direction:column}.donut-side{border-right:none;border-bottom:1px solid var(--border)}}
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <div class="topbar-left">
+    <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
     <div class="logo">DM</div>
     <div>
       <div class="topbar-title">Dashboard Monitoring Kepemilikan Mitra</div>
@@ -271,17 +350,19 @@ table.mt tfoot td:nth-child(2){background:var(--card2)}
   <div class="topbar-right">
     <span id="sync-badge" style="font-size:11px;font-weight:600;color:var(--text3);margin-right:4px;white-space:nowrap">🔌 Menghubungkan...</span>
     <button class="btn btn-outline btn-sm" id="lock-toggle-btn" onclick="onLockToggleClick()" style="white-space:nowrap">🔒 Mode Lihat</button>
-    <button class="btn btn-outline" onclick="showRecap()">🗂️ Rekap</button>
-    <button class="btn btn-outline" onclick="showSummary()">📊 Ringkasan</button>
-    <button class="btn btn-primary" onclick="requireAuth(openAddBranch)">+ Tambah Cabang</button>
+    <button class="btn btn-outline" onclick="showRecap()" title="Rekap">🗂️ <span class="btn-label">Rekap</span></button>
+    <button class="btn btn-outline" onclick="showSummary()" title="Ringkasan">📊 <span class="btn-label">Ringkasan</span></button>
+    <button class="btn btn-primary" onclick="requireAuth(openAddBranch)" title="Tambah Cabang"><span class="btn-plus">+</span> <span class="btn-label">Tambah Cabang</span></button>
   </div>
 </div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <div class="app">
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
     <div class="sidebar-hdr">
       <span class="sidebar-title">Daftar Cabang</span>
       <span class="sbar-count" id="branch-count">0</span>
+      <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Tutup">✕</button>
     </div>
     <div class="sidebar-search">
       <span style="color:var(--text3);font-size:13px">🔍</span>
@@ -828,6 +909,16 @@ function tPiutang(ms){return ms.reduce((s,m)=>s+(+m.piutang||0),0)}
 
 function getBC(s){const m={'Lunas':'b-lunas','Booking':'b-booking','DP':'b-dp','Piutang':'b-piutang'};return m[s]||'b-dev'}
 
+// ── MOBILE SIDEBAR TOGGLE ──
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+
 function renderSidebar(filter=''){
   document.getElementById('branch-count').textContent=branches.length;
   const fl=branches.filter(b=>b.name.toLowerCase().includes(filter.toLowerCase())||b.code.toLowerCase().includes(filter.toLowerCase()));
@@ -849,6 +940,7 @@ function selectBranch(id){
   document.getElementById('branch-detail').style.display='block';
   renderSidebar(document.getElementById('search-input').value);
   renderDetail(id);
+  closeSidebar(); // auto-tutup drawer di mobile setelah pilih cabang
 }
 
 function renderDetail(id){
@@ -1006,6 +1098,7 @@ function showSummary(){
   document.getElementById('summary-view').style.display='block';
   renderSidebar(document.getElementById('search-input').value);
   renderSummaryContent();
+  closeSidebar();
 }
 
 function renderSummaryContent(){
@@ -1215,6 +1308,7 @@ function showRecap(){
   document.getElementById('recap-view').style.display='block';
   renderSidebar(document.getElementById('search-input').value);
   renderRecap();
+  closeSidebar();
 }
 
 function renderRecap(){
