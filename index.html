@@ -90,6 +90,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .bph-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 /* stats */
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.stats-row.cols-5{grid-template-columns:repeat(5,1fr)}
 .sc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
 .sc-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px}
 .sc-val{font-size:22px;font-weight:800;letter-spacing:-.5px}
@@ -259,6 +260,7 @@ table.mt tfoot td:nth-child(2){background:var(--card2)}
 /* TABLET (≤1024px): sidebar sedikit menyempit, grid menyesuaikan */
 @media(max-width:1024px){
   .stats-row{grid-template-columns:repeat(2,1fr)}
+  .stats-row.cols-5{grid-template-columns:repeat(3,1fr)}
   .summary-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
   .pipeline-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
 }
@@ -297,6 +299,7 @@ table.mt tfoot td:nth-child(2){background:var(--card2)}
   #lock-toggle-btn{padding:7px 9px;font-size:13px}
 
   .stats-row{grid-template-columns:repeat(2,1fr);gap:10px}
+  .stats-row.cols-5{grid-template-columns:repeat(2,1fr)}
   .sc{padding:12px 14px}
   .sc-val{font-size:18px}
 
@@ -351,6 +354,7 @@ table.mt tfoot td:nth-child(2){background:var(--card2)}
     <span id="sync-badge" style="font-size:11px;font-weight:600;color:var(--text3);margin-right:4px;white-space:nowrap">🔌 Menghubungkan...</span>
     <button class="btn btn-outline btn-sm" id="lock-toggle-btn" onclick="onLockToggleClick()" style="white-space:nowrap">🔒 Mode Lihat</button>
     <button class="btn btn-outline" onclick="showRecap()" title="Rekap">🗂️ <span class="btn-label">Rekap</span></button>
+    <button class="btn btn-outline" onclick="showBiaya()" title="Biaya Pendirian">💰 <span class="btn-label">Biaya Pendirian</span></button>
     <button class="btn btn-outline" onclick="showSummary()" title="Ringkasan">📊 <span class="btn-label">Ringkasan</span></button>
     <button class="btn btn-primary" onclick="requireAuth(openAddBranch)" title="Tambah Cabang"><span class="btn-plus">+</span> <span class="btn-label">Tambah Cabang</span></button>
   </div>
@@ -380,6 +384,7 @@ table.mt tfoot td:nth-child(2){background:var(--card2)}
     <div id="branch-detail" style="display:none"></div>
     <div id="summary-view" style="display:none"></div>
     <div id="recap-view" style="display:none"></div>
+    <div id="biaya-view" style="display:none"></div>
   </div>
 </div>
 
@@ -518,6 +523,27 @@ table.mt tfoot td:nth-child(2){background:var(--card2)}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="pendingAction=null;closeModal('modal-pw')">Batal</button>
       <button class="btn btn-primary" onclick="submitPassword()">Masuk</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BIAYA PENDIRIAN -->
+<div class="overlay" id="modal-biaya">
+  <div class="modal" style="width:420px">
+    <div class="modal-hdr">
+      <span class="modal-title" id="mbiaya-title">Tambah Item Biaya</span>
+      <button class="modal-close" onclick="closeModal('modal-biaya')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="eb-biaya-id">
+      <input type="hidden" id="eb-biaya-branch">
+      <div class="fg"><label>Nama Item Biaya *</label><input type="text" id="ibiaya-nama" placeholder="Contoh: Sewa lokasi, Renovasi, Peralatan"></div>
+      <div class="fg"><label>Jumlah (Rp) *</label><input type="number" id="ibiaya-jumlah" placeholder="50000000" min="0"></div>
+      <div class="fg"><label>Catatan</label><textarea id="ibiaya-catatan" rows="2" placeholder="Keterangan tambahan (opsional)"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-biaya')">Batal</button>
+      <button class="btn btn-primary" onclick="saveBiaya()">Simpan</button>
     </div>
   </div>
 </div>
@@ -740,7 +766,8 @@ async function initFirestoreSync(){
         id: docSnap.id,
         code: data.code, name: data.name, model: data.model,
         status: data.status, price: data.price || 0, note: data.note || '',
-        mitras: Array.isArray(data.mitras) ? data.mitras : []
+        mitras: Array.isArray(data.mitras) ? data.mitras : [],
+        biayaItems: Array.isArray(data.biayaItems) ? data.biayaItems : []
       });
     });
     list.sort((a,b)=> a.code.localeCompare(b.code));
@@ -793,6 +820,8 @@ function refreshCurrentView(){
     renderSummaryContent();
   } else if(document.getElementById('recap-view')?.style.display==='block'){
     renderRecap();
+  } else if(document.getElementById('biaya-view')?.style.display==='block'){
+    renderBiaya();
   } else if(currentId && !getBranch(currentId)){
     // cabang yang sedang dibuka ternyata sudah dihapus (dari device lain)
     currentId=null;
@@ -937,6 +966,7 @@ function selectBranch(id){
   document.getElementById('welcome-state').style.display='none';
   document.getElementById('summary-view').style.display='none';
   document.getElementById('recap-view').style.display='none';
+  document.getElementById('biaya-view').style.display='none';
   document.getElementById('branch-detail').style.display='block';
   renderSidebar(document.getElementById('search-input').value);
   renderDetail(id);
@@ -1095,6 +1125,7 @@ function showSummary(){
   document.getElementById('welcome-state').style.display='none';
   document.getElementById('branch-detail').style.display='none';
   document.getElementById('recap-view').style.display='none';
+  document.getElementById('biaya-view').style.display='none';
   document.getElementById('summary-view').style.display='block';
   renderSidebar(document.getElementById('search-input').value);
   renderSummaryContent();
@@ -1105,22 +1136,25 @@ function renderSummaryContent(){
   const totalM=branches.reduce((s,b)=>s+b.mitras.length,0);
   const totalU=branches.reduce((s,b)=>s+tUang(b.mitras),0);
   const totalP=branches.reduce((s,b)=>s+tPiutang(b.mitras),0);
+  const totalBiaya=branches.reduce((s,b)=>s+tBiaya(b.biayaItems),0);
   const soldOut=branches.filter(b=>b.status==='lunas').length;
   document.getElementById('summary-view').innerHTML=`
     <div style="margin-bottom:20px">
       <h2 style="font-size:19px;font-weight:800;margin-bottom:3px">Ringkasan Seluruh Cabang</h2>
       <p style="font-size:12px;color:var(--text3)">${branches.length} cabang · ${totalM} mitra · Real-time</p>
     </div>
-    <div class="stats-row" style="margin-bottom:20px">
+    <div class="stats-row cols-5" style="margin-bottom:20px">
       <div class="sc"><div class="sc-lbl">Total Cabang</div><div class="sc-val b">${branches.length}</div></div>
       <div class="sc"><div class="sc-lbl">Sold Out</div><div class="sc-val g">${soldOut}</div></div>
       <div class="sc"><div class="sc-lbl">Total Uang Masuk</div><div class="sc-val g" style="font-size:14px">${fmtRp(totalU)}</div></div>
       <div class="sc"><div class="sc-lbl">Total Piutang</div><div class="sc-val ${totalP>0?'r':'g'}" style="font-size:14px">${totalP>0?fmtRp(totalP):'Nihil'}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="showBiaya()"><div class="sc-lbl">Total Biaya Pendirian</div><div class="sc-val a" style="font-size:14px">${totalBiaya>0?fmtRp(totalBiaya):'Belum ada'}</div></div>
     </div>
     <div class="sum-grid">
       ${branches.map(b=>{
         const ts=tShare(b.mitras),sisa=100-ts;
         const fi=ts>=100?'fi-g':ts>=50?'fi-a':'fi-d';
+        const biayaTotal=tBiaya(b.biayaItems);
         return `
           <div class="sum-card" onclick="selectBranch('${b.id}')">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -1135,6 +1169,7 @@ function renderSummaryContent(){
               ${tPiutang(b.mitras)>0?`<span style="font-size:10px;color:var(--red)">⚠️ Piutang</span>`:''}
               ${sisa>0&&ts>0?`<span style="font-size:10px;color:var(--amber)">Sisa ${fmtPct(sisa)}</span>`:''}
             </div>
+            ${b.status!=='lunas' && biayaTotal>0 ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);font-size:11px;color:var(--amber);display:flex;justify-content:space-between"><span>💰 Biaya pendirian</span><span style="font-family:var(--mono);font-weight:600">${fmtRp(biayaTotal)}</span></div>` : ''}
           </div>
         `;
       }).join('')}
@@ -1305,10 +1340,183 @@ function showRecap(){
   document.getElementById('welcome-state').style.display='none';
   document.getElementById('branch-detail').style.display='none';
   document.getElementById('summary-view').style.display='none';
+  document.getElementById('biaya-view').style.display='none';
   document.getElementById('recap-view').style.display='block';
   renderSidebar(document.getElementById('search-input').value);
   renderRecap();
   closeSidebar();
+}
+
+// ══════════════════════════════════════
+//  TAB: BIAYA PENDIRIAN
+//  Hanya menampilkan cabang yang status-nya BELUM "lunas"
+//  (open, booking, so, go, dev) — cabang lunas = sudah selesai, tidak relevan lagi
+// ══════════════════════════════════════
+function showBiaya(){
+  currentId=null;
+  document.getElementById('welcome-state').style.display='none';
+  document.getElementById('branch-detail').style.display='none';
+  document.getElementById('summary-view').style.display='none';
+  document.getElementById('recap-view').style.display='none';
+  document.getElementById('biaya-view').style.display='block';
+  renderSidebar(document.getElementById('search-input').value);
+  renderBiaya();
+  closeSidebar();
+}
+
+function tBiaya(items){
+  return (items||[]).reduce((s,it)=>s+(+it.jumlah||0),0);
+}
+
+function renderBiaya(){
+  const bv = document.getElementById('biaya-view');
+  const relevant = branches.filter(b=>b.status!=='lunas');
+  const grandTotal = relevant.reduce((s,b)=>s+tBiaya(b.biayaItems),0);
+  const totalItems = relevant.reduce((s,b)=>s+(b.biayaItems||[]).length,0);
+
+  if(relevant.length===0){
+    bv.innerHTML = `
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:19px;font-weight:800;margin-bottom:3px">💰 Biaya Pendirian Cabang</h2>
+        <p style="font-size:12px;color:var(--text3)">Cabang yang masih dalam proses pendirian (belum sold out)</p>
+      </div>
+      <div class="empty" style="padding:60px 20px">
+        <div class="empty-icon">🎉</div>
+        <div class="empty-title">Semua cabang sudah sold out / lunas</div>
+        <div class="empty-sub">Tidak ada cabang yang masih dalam proses pendirian saat ini</div>
+      </div>`;
+    return;
+  }
+
+  bv.innerHTML = `
+    <div style="margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <h2 style="font-size:19px;font-weight:800;margin-bottom:3px">💰 Biaya Pendirian Cabang</h2>
+        <p style="font-size:12px;color:var(--text3)">${relevant.length} cabang dalam proses · ${totalItems} item biaya tercatat</p>
+      </div>
+    </div>
+
+    <div class="stats-row" style="margin-bottom:20px">
+      <div class="sc"><div class="sc-lbl">Cabang Belum Sold</div><div class="sc-val b">${relevant.length}</div></div>
+      <div class="sc"><div class="sc-lbl">Total Item Biaya</div><div class="sc-val">${totalItems}</div></div>
+      <div class="sc"><div class="sc-lbl">Total Biaya Pendirian</div><div class="sc-val a" style="font-size:16px">${fmtRp(grandTotal)}</div></div>
+      <div class="sc"><div class="sc-lbl">Rata-rata / Cabang</div><div class="sc-val" style="font-size:16px">${fmtRp(relevant.length?Math.round(grandTotal/relevant.length):0)}</div></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      ${relevant.map(b=>{
+        const items = b.biayaItems||[];
+        const total = tBiaya(items);
+        return `
+        <div class="os">
+          <div class="os-hdr">
+            <div class="os-title">
+              <span class="badge ${SB[b.status]||'b-dev'}">${SL[b.status]||b.status}</span>
+              <span class="sum-code" style="margin-left:4px">${b.code}</span>
+              <span style="font-weight:700">${b.name}</span>
+            </div>
+            <div class="os-actions">
+              <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);margin-right:6px">${fmtRp(total)}</span>
+              <button class="btn btn-primary btn-sm action-btn" data-action="add-biaya" data-bid="${b.id}">+ Tambah Item</button>
+            </div>
+          </div>
+          ${items.length===0 ? `
+            <div style="padding:24px;text-align:center;color:var(--text3);font-size:12px">Belum ada item biaya untuk cabang ini</div>
+          ` : `
+            <div style="overflow-x:auto">
+              <table class="mt">
+                <thead>
+                  <tr><th>Item Biaya</th><th>Jumlah (Rp)</th><th class="col-hide-mobile">Catatan</th><th>Aksi</th></tr>
+                </thead>
+                <tbody>
+                  ${items.map(it=>`
+                    <tr>
+                      <td style="font-weight:500">${it.nama}</td>
+                      <td class="mono" style="color:var(--amber)">${fmtRp(it.jumlah)}</td>
+                      <td class="col-hide-mobile" style="font-size:11px;color:var(--text3)">${it.catatan||'–'}</td>
+                      <td>
+                        <div style="display:flex;gap:4px">
+                          <button class="btn btn-outline btn-sm action-btn" data-action="edit-biaya" data-bid="${b.id}" data-mid="${it.id}" title="Edit">✏️</button>
+                          <button class="btn btn-danger btn-sm action-btn" data-action="del-biaya" data-bid="${b.id}" data-mid="${it.id}">🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td style="color:var(--text)">TOTAL</td>
+                    <td class="mono" style="color:var(--amber)">${fmtRp(total)}</td>
+                    <td class="col-hide-mobile"></td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          `}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function openAddBiaya(bid){
+  document.getElementById('eb-biaya-id').value='';
+  document.getElementById('eb-biaya-branch').value=bid;
+  document.getElementById('mbiaya-title').textContent='Tambah Item Biaya';
+  document.getElementById('ibiaya-nama').value='';
+  document.getElementById('ibiaya-jumlah').value='';
+  document.getElementById('ibiaya-catatan').value='';
+  openModal('modal-biaya');
+}
+
+function openEditBiaya(bid,iid){
+  const b=getBranch(bid); const it=(b.biayaItems||[]).find(x=>x.id===iid); if(!it)return;
+  document.getElementById('eb-biaya-id').value=iid;
+  document.getElementById('eb-biaya-branch').value=bid;
+  document.getElementById('mbiaya-title').textContent='Edit Item Biaya';
+  document.getElementById('ibiaya-nama').value=it.nama;
+  document.getElementById('ibiaya-jumlah').value=it.jumlah;
+  document.getElementById('ibiaya-catatan').value=it.catatan||'';
+  openModal('modal-biaya');
+}
+
+function saveBiaya(){
+  const eid=document.getElementById('eb-biaya-id').value;
+  const bid=document.getElementById('eb-biaya-branch').value;
+  const b=getBranch(bid);
+  const nama=document.getElementById('ibiaya-nama').value.trim();
+  const jumlah=+document.getElementById('ibiaya-jumlah').value||0;
+  const catatan=document.getElementById('ibiaya-catatan').value.trim();
+  if(!nama){toast('Nama item biaya wajib diisi!','⚠️');return}
+  if(!b.biayaItems) b.biayaItems=[];
+  if(eid){
+    const it=b.biayaItems.find(x=>x.id===eid);
+    Object.assign(it,{nama,jumlah,catatan});
+    toast('Item biaya diperbarui','✅');
+  } else {
+    b.biayaItems.push({id:uid(),nama,jumlah,catatan});
+    toast('Item biaya ditambahkan','✅');
+  }
+  closeModal('modal-biaya');
+  renderBiaya();
+  fbSaveBranch(b);
+}
+
+function confirmDelBiaya(bid,iid,itemName){
+  document.getElementById('cfm-title').textContent=`Hapus item biaya "${itemName}"?`;
+  document.getElementById('cfm-sub').textContent='Data biaya ini akan dihapus permanen.';
+  document.getElementById('cfm-ok').onclick=()=>delBiaya(bid,iid);
+  openModal('modal-confirm');
+}
+
+function delBiaya(bid,iid){
+  const b=getBranch(bid);
+  b.biayaItems=(b.biayaItems||[]).filter(it=>it.id!==iid);
+  closeModal('modal-confirm');
+  renderBiaya();
+  toast('Item biaya dihapus','🗑️');
+  fbSaveBranch(b);
 }
 
 function renderRecap(){
@@ -1505,6 +1713,13 @@ document.getElementById('main-panel').addEventListener('click', function(e) {
     const b = getBranch(bid);
     const m = b && b.mitras.find(x => x.id === mid);
     if (m) requireAuth(()=>confirmDelMitra(bid, mid, m.name));
+  }
+  else if (action === 'add-biaya')   { requireAuth(()=>openAddBiaya(bid)); }
+  else if (action === 'edit-biaya')  { requireAuth(()=>openEditBiaya(bid, mid)); }
+  else if (action === 'del-biaya')   {
+    const b = getBranch(bid);
+    const it = b && (b.biayaItems||[]).find(x => x.id === mid);
+    if (it) requireAuth(()=>confirmDelBiaya(bid, mid, it.nama));
   }
 });
 
